@@ -39,3 +39,25 @@ export async function PATCH(request, { params }) {
 
   return json({ lodge });
 }
+
+// La suppression est bloquée si des membres sont encore rattachés à
+// cette loge — pour éviter de perdre des comptes par erreur. Il faut
+// d'abord les réaffecter à une autre loge (Administration → Utilisateurs)
+// ou les supprimer un par un.
+export async function DELETE(request, { params }) {
+  const auth = await requireRole(['admin']);
+  if (auth.error) return auth.error;
+
+  const memberCount = await prisma.profile.count({ where: { lodgeId: params.id } });
+  if (memberCount > 0) {
+    return jsonError(
+      `Impossible de supprimer cette loge : ${memberCount} compte(s) y sont encore rattaché(s). Réaffectez-les d'abord à une autre loge depuis Administration → Utilisateurs.`,
+      409
+    );
+  }
+
+  // Officiers, tenues, documents et visiteurs de la loge sont
+  // supprimés automatiquement (cascade définie dans le schéma).
+  await prisma.lodge.delete({ where: { id: params.id } });
+  return json({ ok: true });
+}
