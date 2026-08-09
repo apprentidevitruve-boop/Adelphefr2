@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DEGREES } from '../../lib/constants';
+import AppHeader from '../../components/AppHeader';
 
 const OFFICER_ROLES = [
   { key: 'president', label: 'Président(e)' },
@@ -111,7 +112,9 @@ export default function AdminPage() {
   if (!me) return <div style={{ padding: 40 }}>Chargement…</div>;
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 20px' }}>
+    <div>
+      <AppHeader profile={me.profile} />
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 40px' }}>
       <h1 className="fd-display">Administration</h1>
       {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
 
@@ -236,6 +239,7 @@ export default function AdminPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

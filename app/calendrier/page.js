@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DEGREES } from '../../lib/constants';
+import AppHeader from '../../components/AppHeader';
 
 export default function CalendrierPage() {
   const router = useRouter();
@@ -40,7 +41,9 @@ export default function CalendrierPage() {
     .filter((m) => degreeFilter === 'all' || m.minDegree === degreeFilter);
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 20px' }}>
+    <div>
+      <AppHeader profile={me.profile} />
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 40px' }}>
       <h1 className="fd-display">Calendrier des tenues</h1>
       <p style={{ color: 'var(--slate)', marginBottom: 20 }}>Les tenues des loges sœurs accessibles à votre grade.</p>
 
@@ -75,6 +78,7 @@ export default function CalendrierPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

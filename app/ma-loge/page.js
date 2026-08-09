@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import AppHeader from '../../components/AppHeader';
 
 export default function MaLogePage() {
   const router = useRouter();
@@ -41,7 +42,9 @@ export default function MaLogePage() {
   if (!me) return <div style={{ padding: 40 }}>Chargement…</div>;
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 20px' }}>
+    <div>
+      <AppHeader profile={me.profile} />
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 40px' }}>
       <h1 className="fd-display">Ma loge</h1>
       <p style={{ color: 'var(--slate)', marginBottom: 24 }}>{me.profile.lodge?.name} — {me.profile.lodge?.city}</p>
 
@@ -118,6 +121,7 @@ export default function MaLogePage() {
           </div>
         )
       )}
+      </div>
     </div>
   );
 }
