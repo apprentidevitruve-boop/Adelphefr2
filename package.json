@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start -p $PORT",
-    "release": "prisma migrate deploy"
+    "release": "prisma db push --accept-data-loss --skip-generate"
   },
   "dependencies": {
     "next": "14.2.5",
