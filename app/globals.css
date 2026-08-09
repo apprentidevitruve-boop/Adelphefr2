@@ -1,0 +1,17 @@
+:root {
+  --ink: #111111;
+  --stone: #F6F6F4;
+  --card: #FFFFFF;
+  --slate: #5C5C58;
+  --slate-light: #9A9A96;
+  --line: #E2E1DC;
+  --rose: #5C3230;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Inter', sans-serif; color: var(--ink); background: var(--stone); }
+h1, h2, h3, .fd-display { font-family: 'Fraunces', serif; }
+a { color: inherit; }
+.fd-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+.fd-button { background: var(--ink); color: #fff; border: none; border-radius: 6px; padding: 12px 20px; font-weight: 600; cursor: pointer; font-size: 14px; }
+.fd-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.fd-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 14.5px; font-family: inherit; }

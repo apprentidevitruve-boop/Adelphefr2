@@ -1,0 +1,190 @@
+// =====================================================================
+// ADELPHE — Schéma Prisma (PostgreSQL, hébergé sur Scalingo)
+// =====================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  member
+  secretary
+  president
+  treasurer
+  admin
+}
+
+enum Degree {
+  apprentice
+  fellowcraft
+  master
+}
+
+model Lodge {
+  id               String   @id @default(uuid())
+  name             String
+  lodgeNumber      String?
+  rite             String?
+  obedience        String
+  city             String
+  meetingLocation  String
+  description      String   @default("")
+  sealImageUrl     String?
+  pmrAccess        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  officers      Officer[]
+  profiles      Profile[]
+  meetings      Meeting[]
+  documents     Document[]
+  visitorBook   Visitor[]
+}
+
+// Président / secrétaire / trésorier désignés pour une loge — simple
+// fiche de contact, indépendante du compte de connexion éventuel de
+// la personne (voir Profile.role pour les droits applicatifs réels).
+model Officer {
+  id       String  @id @default(uuid())
+  lodge    Lodge   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  lodgeId  String
+  role     String  // 'president' | 'secretary' | 'treasurer'
+  name     String
+  email    String
+}
+
+model Profile {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String
+  name             String
+  role             Role      @default(member)
+  degree           Degree    @default(apprentice)
+  city             String    @default("")
+  notifyByEmail    Boolean   @default(true)
+  lodge            Lodge     @relation(fields: [lodgeId], references: [id])
+  lodgeId          String
+  createdAt        DateTime  @default(now())
+
+  sessions         Session[]
+  notifications    Notification[]
+  visitRequests    VisitRequest[]
+  resetTokens      PasswordResetToken[]
+}
+
+model Session {
+  token      String   @id @default(uuid())
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId  String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+model PasswordResetToken {
+  token      String   @id @default(uuid())
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId  String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+}
+
+model Meeting {
+  id                 String    @id @default(uuid())
+  lodge              Lodge     @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  lodgeId            String
+  date               DateTime  @db.Date
+  time               String    // "HH:MM"
+  minDegree          Degree    @default(apprentice)
+  type               String    @default("regular") // regular | white | open
+  capacity            Int       @default(5)
+  agapesPrice        Decimal?  @db.Decimal(6, 2)
+  vegetarianOption   Boolean   @default(false)
+  convocationToken   String    @unique @default(uuid())
+  createdAt          DateTime  @default(now())
+
+  openingPoints      AgendaPoint[] @relation("OpeningPoints")
+  planches           AgendaPoint[] @relation("Planches")
+  closingPoints      AgendaPoint[] @relation("ClosingPoints")
+  visitRequests      VisitRequest[]
+  attendees          MeetingAttendee[]
+}
+
+// Un seul modèle pour les 3 sections de l'ordre du jour (ouverture,
+// planches, fermeture), différenciées par la relation utilisée.
+model AgendaPoint {
+  id         String  @id @default(uuid())
+  title      String
+  position   Int     @default(0)
+
+  openingOf  Meeting? @relation("OpeningPoints", fields: [openingMeetingId], references: [id], onDelete: Cascade)
+  openingMeetingId String?
+  plancheOf  Meeting? @relation("Planches", fields: [plancheMeetingId], references: [id], onDelete: Cascade)
+  plancheMeetingId String?
+  closingOf  Meeting? @relation("ClosingPoints", fields: [closingMeetingId], references: [id], onDelete: Cascade)
+  closingMeetingId String?
+}
+
+// Présence confirmée / agapes / menu végétarien pour un membre de la
+// loge organisatrice (distinct des visiteurs, gérés via VisitRequest).
+model MeetingAttendee {
+  id                String   @id @default(uuid())
+  meeting           Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId         String
+  profileId         String
+  confirmedPresence Boolean  @default(false)
+  wantsAgapes       Boolean  @default(false)
+  wantsVegetarian   Boolean  @default(false)
+
+  @@unique([meetingId, profileId])
+}
+
+model VisitRequest {
+  id              String   @id @default(uuid())
+  meeting         Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId       String
+  profile         Profile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId       String?
+  guestName       String?
+  guestEmail      String?
+  status          String   @default("pending") // pending | approved | rejected
+  wantsAgapes     Boolean  @default(false)
+  wantsVegetarian Boolean  @default(false)
+  createdAt       DateTime @default(now())
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  lodge       Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  lodgeId     String
+  title       String
+  minDegree   String   @default("all") // all | apprentice | fellowcraft | master | admin
+  description String   @default("")
+  url         String?
+  fileUrl     String?  // objet stocké sur OVHcloud Object Storage
+  fileName    String?
+  addedAt     DateTime @default(now())
+}
+
+model Visitor {
+  id        String   @id @default(uuid())
+  lodge     Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  lodgeId   String
+  firstName String
+  lastName  String
+  email     String
+  addedAt   DateTime @default(now())
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId  String
+  text       String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
