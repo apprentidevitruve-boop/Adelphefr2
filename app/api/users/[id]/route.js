@@ -22,6 +22,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   const auth = await requireRole(['admin']);
   if (auth.error) return auth.error;
+  if (params.id === auth.profile.id) return jsonError('Vous ne pouvez pas supprimer votre propre compte.', 400);
   await prisma.profile.delete({ where: { id: params.id } });
   return json({ ok: true });
 }

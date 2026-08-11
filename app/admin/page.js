@@ -6,9 +6,9 @@ import { DEGREES } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 
 const OFFICER_ROLES = [
-  { key: 'president', label: 'Président(e)' },
+  { key: 'president', label: 'Président.e' },
   { key: 'secretary', label: 'Secrétaire' },
-  { key: 'treasurer', label: 'Trésorier(ère)' },
+  { key: 'treasurer', label: 'Trésorier.ère' },
 ];
 
 export default function AdminPage() {
@@ -92,12 +92,21 @@ export default function AdminPage() {
   };
 
   // --- Utilisateurs ---
+  const [userSearch, setUserSearch] = useState('');
   const updateUserRole = async (id, role) => {
     await fetch(`/api/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) });
     load();
   };
   const updateUserLodge = async (id, lodgeId) => {
     await fetch(`/api/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lodgeId }) });
+    load();
+  };
+  const deleteUser = async (u) => {
+    if (!window.confirm(`Supprimer définitivement le compte de ${u.name} (${u.email}) ?`)) return;
+    const res = await fetch(`/api/users/${u.id}`, { method: 'DELETE' });
+    const b = await res.json().catch(() => ({}));
+    if (!res.ok) { setNotice(b.error || 'Erreur.'); return; }
+    setNotice('Compte supprimé.');
     load();
   };
   const [pwdEditId, setPwdEditId] = useState(null);
@@ -108,6 +117,11 @@ export default function AdminPage() {
     setPwdEditId(null); setPwdValue('');
     setNotice('Mot de passe mis à jour.');
   };
+  const filteredUsers = users.filter((u) => {
+    const q = userSearch.trim().toLowerCase();
+    if (!q) return true;
+    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.adelpheId || '').toLowerCase().includes(q);
+  });
 
   if (!me) return <div style={{ padding: 40 }}>Chargement…</div>;
 
@@ -208,25 +222,35 @@ export default function AdminPage() {
 
       {tab === 'users' && (
         <div>
-          {users.map((u) => (
+          <input
+            className="fd-input"
+            style={{ marginBottom: 16 }}
+            placeholder="Rechercher par nom, e-mail ou numéro Adelphe…"
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+          />
+          {filteredUsers.length === 0 ? (
+            <p style={{ color: 'var(--slate)' }}>Aucun utilisateur ne correspond à cette recherche.</p>
+          ) : filteredUsers.map((u) => (
             <div key={u.id} className="fd-card" style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{u.name}</div>
+                  <div style={{ fontWeight: 600 }}>{u.name} {u.adelpheId && <span style={{ fontWeight: 400, color: 'var(--slate)', fontSize: 12 }}>· {u.adelpheId}</span>}</div>
                   <div style={{ fontSize: 12, color: 'var(--slate)' }}>{u.email}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <select className="fd-input" style={{ width: 150 }} value={u.lodgeId} onChange={(e) => updateUserLodge(u.id, e.target.value)}>
                     {lodges.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
-                  <select className="fd-input" style={{ width: 130 }} value={u.role} onChange={(e) => updateUserRole(u.id, e.target.value)}>
+                  <select className="fd-input" style={{ width: 145 }} value={u.role} onChange={(e) => updateUserRole(u.id, e.target.value)}>
                     <option value="member">Membre</option>
                     <option value="secretary">Secrétaire</option>
-                    <option value="president">Président(e)</option>
-                    <option value="treasurer">Trésorier(ère)</option>
-                    <option value="admin">Administrateur</option>
+                    <option value="president">Président.e</option>
+                    <option value="treasurer">Trésorier.ère</option>
+                    <option value="admin">Administrateur.rice</option>
                   </select>
                   <button className="fd-button" onClick={() => { setPwdEditId(pwdEditId === u.id ? null : u.id); setPwdValue(''); }}>Mot de passe</button>
+                  <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => deleteUser(u)}>Supprimer</button>
                 </div>
               </div>
               {pwdEditId === u.id && (

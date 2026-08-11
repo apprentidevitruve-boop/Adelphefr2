@@ -28,6 +28,28 @@ export default function CalendrierPage() {
     })();
   }, []);
 
+  const [requesting, setRequesting] = useState(null);
+  const [requested, setRequested] = useState(new Set());
+  const [notice, setNotice] = useState('');
+
+  const requestVisit = async (meetingId) => {
+    setRequesting(meetingId);
+    setNotice('');
+    const res = await fetch('/api/visit-requests', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meetingId }),
+    });
+    setRequesting(null);
+    if (res.ok) {
+      setRequested((prev) => new Set(prev).add(meetingId));
+      setNotice('Demande de visite envoyée.');
+    } else {
+      const b = await res.json().catch(() => ({}));
+      setNotice(b.error || 'Erreur lors de la demande.');
+      if (res.status === 409) setRequested((prev) => new Set(prev).add(meetingId));
+    }
+  };
+
   if (!me) return <div style={{ padding: 40 }}>Chargement…</div>;
 
   const otherLodges = [...new Map(meetings.map((m) => [m.lodge.id, m.lodge])).values()];
@@ -66,6 +88,8 @@ export default function CalendrierPage() {
         </select>
       </div>
 
+      {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
+
       {filtered.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucune tenue ne correspond à ces filtres.</p> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map((m) => (
@@ -74,6 +98,14 @@ export default function CalendrierPage() {
               {m.lodge.rite && <div style={{ fontSize: 12, color: 'var(--slate)' }}>{m.lodge.rite}</div>}
               <div style={{ fontSize: 13, color: 'var(--slate)' }}>{m.planches?.[0]?.title}</div>
               <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time} · {m.lodge.city}</div>
+              <button
+                className="fd-button"
+                style={{ marginTop: 10, background: requested.has(m.id) ? 'var(--slate)' : 'var(--ink)' }}
+                disabled={requested.has(m.id) || requesting === m.id}
+                onClick={() => requestVisit(m.id)}
+              >
+                {requested.has(m.id) ? 'Demande envoyée' : requesting === m.id ? 'Envoi…' : 'Demander à visiter'}
+              </button>
             </div>
           ))}
         </div>

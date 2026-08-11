@@ -4,16 +4,21 @@ import { requireRole, BUREAU_ROLES, json, jsonError } from '../../../../lib/auth
 function parseCsv(text) {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (lines.length === 0) return [];
-  const rows = lines.map((l) => l.split(',').map((c) => c.trim().replace(/^"|"$/g, '')));
+  // Les exports Excel français utilisent le point-virgule comme
+  // séparateur (la virgule étant déjà le séparateur décimal) — on
+  // détecte automatiquement lequel des deux est utilisé.
+  const delimiter = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
+  const rows = lines.map((l) => l.split(delimiter).map((c) => c.trim().replace(/^"|"$/g, '')));
   const header = rows[0].map((h) => h.toLowerCase());
   const iNom = header.findIndex((h) => h.includes('nom') && !h.includes('prénom') && !h.includes('prenom'));
   const iPrenom = header.findIndex((h) => h.includes('prénom') || h.includes('prenom'));
   const iEmail = header.findIndex((h) => h.includes('email') || h.includes('mail'));
   const dataRows = (iNom >= 0 || iPrenom >= 0 || iEmail >= 0) ? rows.slice(1) : rows;
   const nomIdx = iNom >= 0 ? iNom : 0, prenomIdx = iPrenom >= 0 ? iPrenom : 1, emailIdx = iEmail >= 0 ? iEmail : 2;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return dataRows
-    .map((r) => ({ lastName: r[nomIdx] || '', firstName: r[prenomIdx] || '', email: (r[emailIdx] || '').toLowerCase() }))
-    .filter((r) => r.email);
+    .map((r) => ({ lastName: r[nomIdx] || '', firstName: r[prenomIdx] || '', email: (r[emailIdx] || '').toLowerCase().trim() }))
+    .filter((r) => EMAIL_RE.test(r.email));
 }
 
 // Corps attendu : { csvText: "..." } — le fichier est lu côté

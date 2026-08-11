@@ -15,6 +15,13 @@ export async function POST(request) {
   const visitors = await prisma.visitor.findMany({ where: { lodgeId: meeting.lodgeId } });
   if (visitors.length === 0) return jsonError("Aucun visiteur enregistré — ajoutez-en d'abord.", 400);
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const validEmails = visitors.map((v) => v.email).filter((e) => EMAIL_RE.test(e));
+  const skipped = visitors.length - validEmails.length;
+  if (validEmails.length === 0) {
+    return jsonError("Aucune adresse e-mail valide parmi les visiteurs enregistrés — vérifiez le carnet de visiteurs.", 400);
+  }
+
   const link = `${process.env.NEXT_PUBLIC_SITE_URL}/convocation/${meeting.convocationToken}`;
   const html = convocationEmailHtml({
     lodgeName: meeting.lodge.name,
@@ -27,11 +34,11 @@ export async function POST(request) {
   });
 
   const result = await sendEmail({
-    bcc: visitors.map((v) => v.email),
+    bcc: validEmails,
     subject: `Invitation — Tenue du ${meeting.date.toISOString().slice(0, 10)} à ${meeting.lodge.name}`,
     html,
   });
   if (!result.ok) return jsonError(`Échec de l'envoi : ${result.error}`, 502);
 
-  return json({ ok: true, sentTo: visitors.length });
+  return json({ ok: true, sentTo: validEmails.length, skipped });
 }

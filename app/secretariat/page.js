@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { DEGREES, MEETING_TYPES, DOC_LEVELS } from '../../lib/constants';
+import { DEGREES, MEETING_TYPES, DOC_LEVELS, degreeLabel, roleLabel } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 
 export default function SecretariatPage() {
@@ -31,21 +31,58 @@ export default function SecretariatPage() {
   };
   useEffect(() => { load(); }, []);
 
-  // --- Nouvelle tenue ---
+  // --- Nouvelle tenue / modification / duplication ---
   const blankMeeting = { lodgeId: '', date: '', time: '19:30', minDegree: 'apprentice', type: 'regular', capacity: 5, agapesPrice: '', vegetarianOption: false, openingPoints: ['Ouverture des travaux', 'Lecture du tracé', 'Lecture de la correspondance'], planches: [''], closingPoints: ['Questions diverses', "Chaîne d'union", 'Fermeture des travaux'] };
   const [form, setForm] = useState(blankMeeting);
+  const [editingMeetingId, setEditingMeetingId] = useState(null);
   useEffect(() => { if (me) setForm((f) => ({ ...f, lodgeId: me.profile.lodgeId })); }, [me]);
 
   const updateList = (key, i, value) => setForm((f) => ({ ...f, [key]: f[key].map((v, idx) => idx === i ? value : v) }));
   const addToList = (key) => setForm((f) => ({ ...f, [key]: [...f[key], ''] }));
 
+  const meetingToForm = (m) => ({
+    lodgeId: m.lodgeId,
+    date: new Date(m.date).toISOString().slice(0, 10),
+    time: m.time,
+    minDegree: m.minDegree,
+    type: m.type,
+    capacity: m.capacity,
+    agapesPrice: m.agapesPrice ?? '',
+    vegetarianOption: !!m.vegetarianOption,
+    openingPoints: m.openingPoints.map((p) => p.title),
+    planches: m.planches.map((p) => p.title),
+    closingPoints: m.closingPoints.map((p) => p.title),
+  });
+
+  const startEditMeeting = (m) => { setEditingMeetingId(m.id); setForm(meetingToForm(m)); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const duplicateMeeting = (m) => { setEditingMeetingId(null); setForm({ ...meetingToForm(m), date: '' }); setNotice('Tenue dupliquée — ajustez la date puis enregistrez.'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const cancelEditMeeting = () => { setEditingMeetingId(null); setForm({ ...blankMeeting, lodgeId: me.profile.lodgeId }); };
+
   const createMeeting = async (e) => {
     e.preventDefault();
-    const res = await fetch('/api/meetings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    const isEdit = !!editingMeetingId;
+    const res = await fetch(isEdit ? `/api/meetings/${editingMeetingId}` : '/api/meetings', {
+      method: isEdit ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
     if (!res.ok) { const b = await res.json().catch(() => ({})); setNotice(b.error || 'Erreur.'); return; }
-    setNotice('Tenue créée.');
+    setNotice(isEdit ? 'Tenue mise à jour.' : 'Tenue créée.');
+    setEditingMeetingId(null);
     setForm({ ...blankMeeting, lodgeId: me.profile.lodgeId });
     load();
+  };
+  const deleteMeeting = async (m) => {
+    if (!window.confirm(`Supprimer définitivement la tenue "${m.planches?.[0]?.title}" du ${new Date(m.date).toLocaleDateString('fr-FR')} ?`)) return;
+    const res = await fetch(`/api/meetings/${m.id}`, { method: 'DELETE' });
+    if (!res.ok) { setNotice('Erreur.'); return; }
+    setNotice('Tenue supprimée.');
+    load();
+  };
+  const copyConvocationLink = (m) => {
+    const link = `${window.location.origin}/convocation/${m.convocationToken}`;
+    navigator.clipboard?.writeText(link);
+    setNotice(`Lien copié : ${link}`);
   };
 
   const resolveRequest = async (id, status) => {
@@ -55,26 +92,58 @@ export default function SecretariatPage() {
     load();
   };
 
-  // --- Nouveau membre ---
-  const [memberForm, setMemberForm] = useState({ name: '', email: '', password: '', degree: 'apprentice', city: '' });
+  // --- Nouveau membre / modification ---
+  const blankMemberForm = { firstName: '', lastName: '', email: '', password: '', degree: 'apprentice', city: '', masonicIdNumber: '', initiatedAt: '', passedFellowcraftAt: '', raisedMasterAt: '' };
+  const [memberForm, setMemberForm] = useState(blankMemberForm);
   const createMember = async (e) => {
     e.preventDefault();
     const res = await fetch('/api/members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(memberForm) });
     if (!res.ok) { const b = await res.json().catch(() => ({})); setNotice(b.error || 'Erreur.'); return; }
-    setNotice('Membre ajouté.');
-    setMemberForm({ name: '', email: '', password: '', degree: 'apprentice', city: '' });
+    setNotice('Membre ajouté. Seules les 3 premières lettres du prénom et du nom sont conservées.');
+    setMemberForm(blankMemberForm);
+    load();
+  };
+
+  const [editingMemberId, setEditingMemberId] = useState(null);
+  const [editMemberForm, setEditMemberForm] = useState(null);
+  const startEditMember = (m) => {
+    setEditingMemberId(m.id);
+    setEditMemberForm({
+      degree: m.degree, city: m.city || '', masonicIdNumber: m.masonicIdNumber || '',
+      initiatedAt: m.initiatedAt ? m.initiatedAt.slice(0, 10) : '',
+      passedFellowcraftAt: m.passedFellowcraftAt ? m.passedFellowcraftAt.slice(0, 10) : '',
+      raisedMasterAt: m.raisedMasterAt ? m.raisedMasterAt.slice(0, 10) : '',
+    });
+  };
+  const saveMemberEdit = async (e) => {
+    e.preventDefault();
+    const res = await fetch(`/api/members/${editingMemberId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editMemberForm) });
+    if (!res.ok) { const b = await res.json().catch(() => ({})); setNotice(b.error || 'Erreur.'); return; }
+    setNotice('Fiche du membre mise à jour.');
+    setEditingMemberId(null);
+    setEditMemberForm(null);
+    load();
+  };
+  const deleteMember = async (m) => {
+    if (!window.confirm(`Supprimer définitivement le compte ${m.adelpheId || m.name} ?`)) return;
+    const res = await fetch(`/api/members/${m.id}`, { method: 'DELETE' });
+    const b = await res.json().catch(() => ({}));
+    if (!res.ok) { setNotice(b.error || 'Erreur.'); return; }
+    setNotice('Membre supprimé.');
     load();
   };
 
   const sendInvite = async (meetingId) => {
     const res = await fetch('/api/send-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ meetingId }) });
     const b = await res.json().catch(() => ({}));
-    setNotice(res.ok ? `Invitations envoyées à ${b.sentTo} visiteur(s).` : b.error);
+    if (!res.ok) { setNotice(b.error || 'Erreur.'); return; }
+    setNotice(`Invitations envoyées à ${b.sentTo} visiteur(s).${b.skipped ? ` (${b.skipped} adresse(s) invalide(s) ignorée(s) — vérifiez le carnet de visiteurs.)` : ''}`);
   };
 
   // --- Documents ---
   const blankDoc = { title: '', minDegree: 'all', description: '', url: '', fileUrl: '', fileName: '' };
   const [docForm, setDocForm] = useState(blankDoc);
+  const [docFileInputKey, setDocFileInputKey] = useState(0);
   const uploadDocFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -92,6 +161,7 @@ export default function SecretariatPage() {
     if (!res.ok) { setNotice('Erreur.'); return; }
     setNotice('Document ajouté.');
     setDocForm(blankDoc);
+    setDocFileInputKey((k) => k + 1);
     load();
   };
   const deleteDocument = async (id) => {
@@ -110,7 +180,19 @@ export default function SecretariatPage() {
     load();
   };
   const deleteVisitor = async (id) => {
+    if (!window.confirm('Supprimer ce visiteur ?')) return;
     await fetch(`/api/visitors/${id}`, { method: 'DELETE' });
+    load();
+  };
+  const [editingVisitorId, setEditingVisitorId] = useState(null);
+  const [editVisitorForm, setEditVisitorForm] = useState(null);
+  const startEditVisitor = (v) => { setEditingVisitorId(v.id); setEditVisitorForm({ firstName: v.firstName, lastName: v.lastName, email: v.email }); };
+  const saveVisitorEdit = async (e) => {
+    e.preventDefault();
+    const res = await fetch(`/api/visitors/${editingVisitorId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editVisitorForm) });
+    if (!res.ok) { setNotice('Erreur.'); return; }
+    setEditingVisitorId(null);
+    setEditVisitorForm(null);
     load();
   };
   const importCsv = async (e) => {
@@ -131,6 +213,9 @@ export default function SecretariatPage() {
       <AppHeader profile={me.profile} />
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 40px' }}>
       <h1 className="fd-display">Secrétariat</h1>
+      <a href="/api/export" style={{ display: 'inline-block', marginBottom: 16 }}>
+        <button className="fd-button" style={{ background: 'var(--slate)' }}>Télécharger les données de ma loge (.zip)</button>
+      </a>
       {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)' }}>
@@ -144,8 +229,8 @@ export default function SecretariatPage() {
 
       {tab === 'meetings' && (
         <div>
-          <form onSubmit={createMeeting} className="fd-card" style={{ marginBottom: 20 }}>
-            <h3 style={{ marginTop: 0 }}>Nouvelle tenue</h3>
+          <form onSubmit={createMeeting} className="fd-card" style={{ marginBottom: 20, border: editingMeetingId ? '1.5px solid var(--ink)' : undefined }}>
+            <h3 style={{ marginTop: 0 }}>{editingMeetingId ? 'Modifier la tenue' : 'Nouvelle tenue'}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <input className="fd-input" type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
               <input className="fd-input" type="time" required value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
@@ -158,6 +243,10 @@ export default function SecretariatPage() {
               <input className="fd-input" type="number" placeholder="Capacité visiteurs" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
               <input className="fd-input" type="number" placeholder="Prix agapes" value={form.agapesPrice} onChange={(e) => setForm({ ...form, agapesPrice: e.target.value })} />
             </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, marginBottom: 12, cursor: 'pointer' }}>
+              <input type="checkbox" checked={form.vegetarianOption} onChange={(e) => setForm({ ...form, vegetarianOption: e.target.checked })} />
+              Proposer une option de menu végétarien aux agapes
+            </label>
 
             <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Points d'ouverture</div>
             {form.openingPoints.map((p, i) => (
@@ -177,14 +266,23 @@ export default function SecretariatPage() {
             ))}
             <button type="button" onClick={() => addToList('closingPoints')} style={{ background: 'none', border: 'none', fontSize: 12.5, cursor: 'pointer', marginBottom: 16 }}>+ Ajouter</button>
 
-            <button className="fd-button" type="submit">Créer la tenue</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="fd-button" type="submit">{editingMeetingId ? 'Enregistrer les modifications' : 'Créer la tenue'}</button>
+              {editingMeetingId && <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={cancelEditMeeting}>Annuler</button>}
+            </div>
           </form>
 
           {meetings.filter((m) => m.lodgeId === me.profile.lodgeId).map((m) => (
             <div key={m.id} className="fd-card" style={{ marginBottom: 10 }}>
               <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
               <div style={{ fontSize: 12, color: 'var(--slate)' }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time}</div>
-              <button className="fd-button" style={{ marginTop: 10 }} onClick={() => sendInvite(m.id)}>Envoyer les invitations aux visiteurs</button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                <button className="fd-button" onClick={() => sendInvite(m.id)}>Envoyer les invitations aux visiteurs</button>
+                <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => copyConvocationLink(m)}>Copier le lien de convocation</button>
+                <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => startEditMeeting(m)}>Modifier</button>
+                <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => duplicateMeeting(m)}>Dupliquer</button>
+                <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => deleteMeeting(m)}>Supprimer</button>
+              </div>
               <MeetingParticipants meetingId={m.id} />
             </div>
           ))}
@@ -214,15 +312,73 @@ export default function SecretariatPage() {
         <div>
           <form onSubmit={createMember} className="fd-card" style={{ marginBottom: 20 }}>
             <h3 style={{ marginTop: 0 }}>Ajouter un membre</h3>
-            <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Nom complet" required value={memberForm.name} onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })} />
+            <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: -4, marginBottom: 12 }}>
+              Par discrétion, seules les 3 premières lettres du prénom et du nom sont conservées en base — la personne est ensuite identifiée par son numéro Adelphe.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+              <input className="fd-input" placeholder="Prénom" required value={memberForm.firstName} onChange={(e) => setMemberForm({ ...memberForm, firstName: e.target.value })} />
+              <input className="fd-input" placeholder="Nom" required value={memberForm.lastName} onChange={(e) => setMemberForm({ ...memberForm, lastName: e.target.value })} />
+            </div>
             <input className="fd-input" style={{ marginBottom: 8 }} type="email" placeholder="E-mail" required value={memberForm.email} onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })} />
             <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Mot de passe provisoire" required value={memberForm.password} onChange={(e) => setMemberForm({ ...memberForm, password: e.target.value })} />
-            <select className="fd-input" style={{ marginBottom: 8 }} value={memberForm.degree} onChange={(e) => setMemberForm({ ...memberForm, degree: e.target.value })}>
+            <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Numéro d'identité maçonnique (facultatif)" value={memberForm.masonicIdNumber} onChange={(e) => setMemberForm({ ...memberForm, masonicIdNumber: e.target.value })} />
+            <select className="fd-input" style={{ marginBottom: 12 }} value={memberForm.degree} onChange={(e) => setMemberForm({ ...memberForm, degree: e.target.value })}>
               {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
             </select>
+
+            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 8 }}>Dates (facultatif)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+              <label style={{ fontSize: 11.5 }}>Initiation
+                <input className="fd-input" type="date" value={memberForm.initiatedAt} onChange={(e) => setMemberForm({ ...memberForm, initiatedAt: e.target.value })} />
+              </label>
+              <label style={{ fontSize: 11.5 }}>Passage CC
+                <input className="fd-input" type="date" value={memberForm.passedFellowcraftAt} onChange={(e) => setMemberForm({ ...memberForm, passedFellowcraftAt: e.target.value })} />
+              </label>
+              <label style={{ fontSize: 11.5 }}>Élévation MM
+                <input className="fd-input" type="date" value={memberForm.raisedMasterAt} onChange={(e) => setMemberForm({ ...memberForm, raisedMasterAt: e.target.value })} />
+              </label>
+            </div>
             <button className="fd-button" type="submit">Ajouter à la loge</button>
           </form>
-          {members.map((m) => <div key={m.id} className="fd-card" style={{ marginBottom: 8 }}>{m.name} — {m.degree} — {m.role}</div>)}
+
+          {members.map((m) => (
+            <div key={m.id} className="fd-card" style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{m.name} <span style={{ fontWeight: 400, color: 'var(--slate)', fontSize: 12.5 }}>· {m.adelpheId}</span></div>
+                  <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>{degreeLabel(m.degree)} · {roleLabel(m.role)}{m.masonicIdNumber ? ` · N° maç. ${m.masonicIdNumber}` : ''}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => startEditMember(m)}>Modifier</button>
+                  <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => deleteMember(m)}>Supprimer</button>
+                </div>
+              </div>
+
+              {editingMemberId === m.id && editMemberForm && (
+                <form onSubmit={saveMemberEdit} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                  <select className="fd-input" style={{ marginBottom: 8 }} value={editMemberForm.degree} onChange={(e) => setEditMemberForm({ ...editMemberForm, degree: e.target.value })}>
+                    {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+                  </select>
+                  <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Numéro d'identité maçonnique" value={editMemberForm.masonicIdNumber} onChange={(e) => setEditMemberForm({ ...editMemberForm, masonicIdNumber: e.target.value })} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                    <label style={{ fontSize: 11.5 }}>Initiation
+                      <input className="fd-input" type="date" value={editMemberForm.initiatedAt} onChange={(e) => setEditMemberForm({ ...editMemberForm, initiatedAt: e.target.value })} />
+                    </label>
+                    <label style={{ fontSize: 11.5 }}>Passage CC
+                      <input className="fd-input" type="date" value={editMemberForm.passedFellowcraftAt} onChange={(e) => setEditMemberForm({ ...editMemberForm, passedFellowcraftAt: e.target.value })} />
+                    </label>
+                    <label style={{ fontSize: 11.5 }}>Élévation MM
+                      <input className="fd-input" type="date" value={editMemberForm.raisedMasterAt} onChange={(e) => setEditMemberForm({ ...editMemberForm, raisedMasterAt: e.target.value })} />
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="fd-button" type="submit">Enregistrer</button>
+                    <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => { setEditingMemberId(null); setEditMemberForm(null); }}>Annuler</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ))}
         </div>
       )}
       {tab === 'documents' && (
@@ -236,7 +392,7 @@ export default function SecretariatPage() {
             <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 70 }} placeholder="Description" value={docForm.description} onChange={(e) => setDocForm({ ...docForm, description: e.target.value })} />
             <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Lien externe (facultatif)" value={docForm.url} onChange={(e) => setDocForm({ ...docForm, url: e.target.value })} />
             <div style={{ marginBottom: 12 }}>
-              <input type="file" onChange={uploadDocFile} />
+              <input key={docFileInputKey} type="file" onChange={uploadDocFile} />
               {docForm.fileName && <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>📎 {docForm.fileName}</div>}
             </div>
             <button className="fd-button" type="submit">Ajouter</button>
@@ -268,9 +424,28 @@ export default function SecretariatPage() {
             <button className="fd-button" type="submit">Ajouter</button>
           </form>
           {visitors.map((v) => (
-            <div key={v.id} className="fd-card" style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>{v.firstName} {v.lastName} — {v.email}</div>
-              <button onClick={() => deleteVisitor(v.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer' }}>Supprimer</button>
+            <div key={v.id} className="fd-card" style={{ marginBottom: 8 }}>
+              {editingVisitorId === v.id && editVisitorForm ? (
+                <form onSubmit={saveVisitorEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.4fr auto', gap: 8, alignItems: 'center' }}>
+                  <input className="fd-input" required value={editVisitorForm.firstName} onChange={(e) => setEditVisitorForm({ ...editVisitorForm, firstName: e.target.value })} />
+                  <input className="fd-input" required value={editVisitorForm.lastName} onChange={(e) => setEditVisitorForm({ ...editVisitorForm, lastName: e.target.value })} />
+                  <input className="fd-input" type="email" required value={editVisitorForm.email} onChange={(e) => setEditVisitorForm({ ...editVisitorForm, email: e.target.value })} />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="fd-button" type="submit">OK</button>
+                    <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => { setEditingVisitorId(null); setEditVisitorForm(null); }}>Annuler</button>
+                  </div>
+                </form>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.4fr auto', gap: 8, alignItems: 'center' }}>
+                  <div style={{ fontWeight: 600 }}>{v.firstName}</div>
+                  <div style={{ fontWeight: 600 }}>{v.lastName}</div>
+                  <div style={{ fontSize: 13, color: 'var(--slate)' }}>{v.email}</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => startEditVisitor(v)} style={{ background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', fontSize: 13 }}>Modifier</button>
+                    <button onClick={() => deleteVisitor(v.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 13 }}>Supprimer</button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

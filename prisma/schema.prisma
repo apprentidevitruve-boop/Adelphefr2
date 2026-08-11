@@ -61,11 +61,16 @@ model Profile {
   id               String    @id @default(uuid())
   email            String    @unique
   passwordHash     String
-  name             String
+  name             String    // par choix de discrétion : uniquement les 3 premières lettres du prénom + 3 du nom (ex. "Ant Ber"), jamais le nom complet
+  adelpheId        String?   @unique
+  masonicIdNumber  String?
   role             Role      @default(member)
   degree           Degree    @default(apprentice)
   city             String    @default("")
   notifyByEmail    Boolean   @default(true)
+  initiatedAt          DateTime? @db.Date
+  passedFellowcraftAt  DateTime? @db.Date
+  raisedMasterAt       DateTime? @db.Date
   lodge            Lodge     @relation(fields: [lodgeId], references: [id])
   lodgeId          String
   createdAt        DateTime  @default(now())
