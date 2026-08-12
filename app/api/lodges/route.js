@@ -5,7 +5,7 @@ export async function GET() {
   const auth = await requireRole(null); // n'importe quel utilisateur connecté
   if (auth.error) return auth.error;
 
-  const lodges = await prisma.lodge.findMany({ include: { officers: true }, orderBy: { name: 'asc' } });
+  const lodges = await prisma.lodge.findMany({ include: { officers: true, obedience: true }, orderBy: { name: 'asc' } });
   return json({ lodges });
 }
 
@@ -19,11 +19,12 @@ export async function POST(request) {
   if (auth.error) return auth.error;
 
   const body = await request.json();
-  const { name, lodgeNumber, rite, obedience, city, meetingLocation, description, pmrAccess, officers } = body;
-  if (!name || !obedience || !city || !meetingLocation) return jsonError('Champs requis manquants.', 400);
+  const { name, lodgeNumber, rite, obedienceId, city, meetingLocation, description, pmrAccess, officers } = body;
+  if (!name || !obedienceId || !city || !meetingLocation) return jsonError('Champs requis manquants.', 400);
 
   const lodge = await prisma.lodge.create({
-    data: { name, lodgeNumber, rite, obedience, city, meetingLocation, description: description || '', pmrAccess: !!pmrAccess },
+    data: { name, lodgeNumber, rite, obedienceId, city, meetingLocation, description: description || '', pmrAccess: !!pmrAccess },
+    include: { obedience: true },
   });
 
   const created = [];

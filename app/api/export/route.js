@@ -23,7 +23,7 @@ export async function GET() {
   if (auth.error) return auth.error;
   const { profile } = auth;
 
-  const lodge = await prisma.lodge.findUnique({ where: { id: profile.lodgeId } });
+  const lodge = await prisma.lodge.findUnique({ where: { id: profile.lodgeId }, include: { obedience: true } });
   const members = await prisma.profile.findMany({ where: { lodgeId: profile.lodgeId }, orderBy: { name: 'asc' } });
   const meetings = await prisma.meeting.findMany({
     where: { lodgeId: profile.lodgeId },
@@ -74,7 +74,7 @@ export async function GET() {
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Tenue du ${m.date.toISOString().slice(0, 10)}</title></head>
 <body style="font-family: Georgia, serif; max-width: 600px; margin: 40px auto;">
 <h1>${lodge.name}${lodge.lodgeNumber ? ' n°' + lodge.lodgeNumber : ''}</h1>
-<p>${lodge.obedience}${lodge.rite ? ' — ' + lodge.rite : ''}</p>
+<p>${lodge.obedience.name}${lodge.rite ? ' — ' + lodge.rite : ''}</p>
 <h2>Tenue du ${m.date.toISOString().slice(0, 10)} à ${m.time}</h2>
 <p>Degré minimum : ${degreeLabel(m.minDegree)}</p>
 <h3>Ordre du jour</h3>

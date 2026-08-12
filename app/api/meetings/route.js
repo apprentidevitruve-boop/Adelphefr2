@@ -9,7 +9,7 @@ export async function GET() {
 
   const meetings = await prisma.meeting.findMany({
     include: {
-      lodge: true, openingPoints: true, planches: true, closingPoints: true,
+      lodge: { include: { obedience: true } }, openingPoints: true, planches: true, closingPoints: true,
       attendees: { where: { profileId: profile.id } },
     },
     orderBy: { date: 'asc' },

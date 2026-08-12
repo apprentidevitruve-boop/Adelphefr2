@@ -1,5 +1,6 @@
 import { prisma } from '../../../lib/prisma';
 import { hashPassword, json, jsonError } from '../../../lib/auth';
+import { DEFAULT_OBEDIENCES } from '../../../lib/constants';
 
 // Route de configuration initiale, pensée pour ne JAMAIS nécessiter de
 // console/CLI : elle ne fonctionne qu'une seule fois (tant qu'aucun
@@ -14,7 +15,7 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { secret, adminName, adminEmail, adminPassword, lodgeName, obedience, city, meetingLocation } = body;
+  const { secret, adminName, adminEmail, adminPassword, lodgeName, obedienceName, city, meetingLocation } = body;
 
   if (!process.env.SETUP_SECRET) {
     return jsonError("La variable d'environnement SETUP_SECRET n'est pas configurée sur le serveur.", 500);
@@ -22,12 +23,21 @@ export async function POST(request) {
   if (secret !== process.env.SETUP_SECRET) {
     return jsonError('Clé de configuration incorrecte.', 401);
   }
-  if (!adminName || !adminEmail || !adminPassword || !lodgeName || !obedience || !city || !meetingLocation) {
+  if (!adminName || !adminEmail || !adminPassword || !lodgeName || !obedienceName || !city || !meetingLocation) {
     return jsonError('Merci de compléter tous les champs.', 400);
   }
   if (adminPassword.length < 6) return jsonError('Le mot de passe doit contenir au moins 6 caractères.', 400);
 
-  const lodge = await prisma.lodge.create({ data: { name: lodgeName, obedience, city, meetingLocation } });
+  // On amorce la liste des obédiences si elle est encore vide, pour
+  // que l'administration dispose immédiatement d'un jeu de départ.
+  const existingCount = await prisma.obedience.count();
+  if (existingCount === 0) {
+    await prisma.obedience.createMany({ data: DEFAULT_OBEDIENCES, skipDuplicates: true });
+  }
+  let obedience = await prisma.obedience.findUnique({ where: { name: obedienceName } });
+  if (!obedience) obedience = await prisma.obedience.create({ data: { name: obedienceName } });
+
+  const lodge = await prisma.lodge.create({ data: { name: lodgeName, obedienceId: obedience.id, city, meetingLocation } });
   const passwordHash = await hashPassword(adminPassword);
   await prisma.profile.create({
     data: { name: adminName, email: adminEmail.trim().toLowerCase(), passwordHash, role: 'admin', degree: 'master', lodgeId: lodge.id },

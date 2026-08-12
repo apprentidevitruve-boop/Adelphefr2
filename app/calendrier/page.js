@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { DEGREES } from '../../lib/constants';
+import { DEGREES, recognitionStatus } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 
 export default function CalendrierPage() {
   const router = useRouter();
   const [me, setMe] = useState(null);
   const [meetings, setMeetings] = useState([]);
+  const [obediences, setObediences] = useState([]);
   const [lodgeFilter, setLodgeFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
   const [riteFilter, setRiteFilter] = useState('all');
@@ -20,11 +21,12 @@ export default function CalendrierPage() {
       if (!meRes.ok) { router.push('/login'); return; }
       const meBody = await meRes.json();
       setMe(meBody);
-      const meetingsRes = await fetch('/api/meetings');
+      const [meetingsRes, obediencesRes] = await Promise.all([fetch('/api/meetings'), fetch('/api/obediences')]);
       const all = (await meetingsRes.json()).meetings || [];
       // Le calendrier ne montre que les tenues des AUTRES loges — les
       // tenues de sa propre loge se trouvent dans "Ma loge".
       setMeetings(all.filter((m) => m.lodgeId !== meBody.profile.lodgeId));
+      setObediences((await obediencesRes.json()).obediences || []);
     })();
   }, []);
 
@@ -92,11 +94,22 @@ export default function CalendrierPage() {
 
       {filtered.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucune tenue ne correspond à ces filtres.</p> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map((m) => (
+          {filtered.map((m) => {
+            const rec = recognitionStatus(me.profile.lodge?.obedienceId, m.lodge.obedienceId, obediences);
+            return (
             <div key={m.id} className="fd-card">
               <div style={{ fontWeight: 600 }}>{m.lodge.name}</div>
               {m.lodge.rite && <div style={{ fontSize: 12, color: 'var(--slate)' }}>{m.lodge.rite}</div>}
-              <div style={{ fontSize: 13, color: 'var(--slate)' }}>{m.planches?.[0]?.title}</div>
+              {rec && (
+                <div style={{
+                  display: 'inline-block', fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px', marginTop: 6,
+                  background: rec.level === 'mutual' ? '#EAF3EA' : rec.level === 'partial' ? '#FBF6EC' : '#F3F2EE',
+                  color: rec.level === 'mutual' ? '#2E5B2E' : rec.level === 'partial' ? '#8A6A2A' : 'var(--slate)',
+                }}>
+                  {rec.label}
+                </div>
+              )}
+              <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 6 }}>{m.planches?.[0]?.title}</div>
               <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time} · {m.lodge.city}</div>
               <button
                 className="fd-button"
@@ -107,7 +120,8 @@ export default function CalendrierPage() {
                 {requested.has(m.id) ? 'Demande envoyée' : requesting === m.id ? 'Envoi…' : 'Demander à visiter'}
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
       </div>

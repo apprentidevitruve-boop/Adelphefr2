@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { DEFAULT_OBEDIENCES } from '../../lib/constants';
 
 export default function SetupPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     secret: '', adminName: '', adminEmail: '', adminPassword: '',
-    lodgeName: '', obedience: '', city: '', meetingLocation: '',
+    lodgeName: '', obedienceName: '', city: '', meetingLocation: '',
   });
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -64,7 +65,10 @@ export default function SetupPage() {
               </label>
               <label style={{ display: 'block', marginBottom: 12 }}>
                 <span style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>Obédience</span>
-                <input className="fd-input" required value={form.obedience} onChange={set('obedience')} />
+                <select className="fd-input" required value={form.obedienceName} onChange={set('obedienceName')}>
+                  <option value="">— Sélectionner —</option>
+                  {DEFAULT_OBEDIENCES.map((o) => <option key={o.name} value={o.name}>{o.name}</option>)}
+                </select>
               </label>
               <label style={{ display: 'block', marginBottom: 12 }}>
                 <span style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>Orient (ville)</span>

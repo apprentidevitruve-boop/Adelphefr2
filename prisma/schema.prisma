@@ -30,7 +30,8 @@ model Lodge {
   name             String
   lodgeNumber      String?
   rite             String?
-  obedience        String
+  obedience        Obedience @relation(fields: [obedienceId], references: [id])
+  obedienceId      String
   city             String
   meetingLocation  String
   description      String   @default("")
@@ -48,6 +49,34 @@ model Lodge {
 // Président / secrétaire / trésorier désignés pour une loge — simple
 // fiche de contact, indépendante du compte de connexion éventuel de
 // la personne (voir Profile.role pour les droits applicatifs réels).
+// Une obédience, avec les autres obédiences qu'elle reconnaît. La
+// reconnaissance n'est pas forcément symétrique dans la réalité
+// maçonnique — on modélise donc une relation orientée : "A reconnaît
+// B" n'implique pas "B reconnaît A", la réciprocité (reconnaissance
+// mutuelle) étant simplement le cas où les deux relations existent.
+model Obedience {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  abbreviation String?
+  description  String   @default("")
+  createdAt    DateTime @default(now())
+
+  lodges         Lodge[]
+  recognizes     Recognition[] @relation("Recognizer")
+  recognizedBy   Recognition[] @relation("Recognized")
+}
+
+model Recognition {
+  id                String    @id @default(uuid())
+  recognizer        Obedience @relation("Recognizer", fields: [recognizerId], references: [id], onDelete: Cascade)
+  recognizerId      String
+  recognized        Obedience @relation("Recognized", fields: [recognizedId], references: [id], onDelete: Cascade)
+  recognizedId      String
+  createdAt         DateTime  @default(now())
+
+  @@unique([recognizerId, recognizedId])
+}
+
 model Officer {
   id       String  @id @default(uuid())
   lodge    Lodge   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)

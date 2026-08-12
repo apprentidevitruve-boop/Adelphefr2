@@ -5,11 +5,12 @@ export async function PATCH(request, { params }) {
   const auth = await requireRole(['admin']);
   if (auth.error) return auth.error;
 
-  const { name, lodgeNumber, rite, obedience, city, meetingLocation, description, pmrAccess, sealImageUrl, officers } = await request.json();
+  const { name, lodgeNumber, rite, obedienceId, city, meetingLocation, description, pmrAccess, sealImageUrl, officers } = await request.json();
 
   const lodge = await prisma.lodge.update({
     where: { id: params.id },
-    data: { name, lodgeNumber, rite, obedience, city, meetingLocation, description, pmrAccess: !!pmrAccess, sealImageUrl },
+    data: { name, lodgeNumber, rite, obedienceId, city, meetingLocation, description, pmrAccess: !!pmrAccess, sealImageUrl },
+    include: { obedience: true },
   });
 
   if (Array.isArray(officers)) {

@@ -17,6 +17,7 @@ export default function AdminPage() {
   const [tab, setTab] = useState('lodges');
   const [lodges, setLodges] = useState([]);
   const [users, setUsers] = useState([]);
+  const [obediences, setObediences] = useState([]);
   const [notice, setNotice] = useState('');
 
   const load = async () => {
@@ -25,15 +26,46 @@ export default function AdminPage() {
     const meBody = await meRes.json();
     if (meBody.profile.role !== 'admin') { router.push('/dashboard'); return; }
     setMe(meBody);
-    const [lodgesRes, usersRes] = await Promise.all([fetch('/api/lodges'), fetch('/api/users')]);
+    const [lodgesRes, usersRes, obediencesRes] = await Promise.all([fetch('/api/lodges'), fetch('/api/users'), fetch('/api/obediences')]);
     setLodges((await lodgesRes.json()).lodges || []);
     setUsers((await usersRes.json()).users || []);
+    setObediences((await obediencesRes.json()).obediences || []);
   };
   useEffect(() => { load(); }, []);
 
+  // --- Obédiences ---
+  const [obedienceForm, setObedienceForm] = useState({ name: '', abbreviation: '', description: '' });
+  const createObedience = async (e) => {
+    e.preventDefault();
+    const res = await fetch('/api/obediences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obedienceForm) });
+    const b = await res.json().catch(() => ({}));
+    if (!res.ok) { setNotice(b.error || 'Erreur.'); return; }
+    setNotice('Obédience ajoutée.');
+    setObedienceForm({ name: '', abbreviation: '', description: '' });
+    load();
+  };
+  const deleteObedience = async (o) => {
+    if (!window.confirm(`Supprimer l'obédience "${o.name}" ?`)) return;
+    const res = await fetch(`/api/obediences/${o.id}`, { method: 'DELETE' });
+    const b = await res.json().catch(() => ({}));
+    if (!res.ok) { setNotice(b.error || 'Erreur.'); return; }
+    setNotice('Obédience supprimée.');
+    load();
+  };
+  const [recognitionEditorId, setRecognitionEditorId] = useState(null);
+  const toggleRecognition = async (obedience, otherId) => {
+    const current = new Set(obedience.recognizes);
+    if (current.has(otherId)) current.delete(otherId); else current.add(otherId);
+    await fetch(`/api/obediences/${obedience.id}/recognitions`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recognizedIds: [...current] }),
+    });
+    load();
+  };
+
   // --- Nouvelle loge ---
   const blankOfficers = () => OFFICER_ROLES.map((r) => ({ role: r.key, name: '', email: '', password: '' }));
-  const blankLodge = { name: '', lodgeNumber: '', rite: '', obedience: '', city: '', meetingLocation: '', description: '', pmrAccess: false, officers: blankOfficers() };
+  const blankLodge = { name: '', lodgeNumber: '', rite: '', obedienceId: '', city: '', meetingLocation: '', description: '', pmrAccess: false, officers: blankOfficers() };
   const [lodgeForm, setLodgeForm] = useState(blankLodge);
   const [showLodgeForm, setShowLodgeForm] = useState(false);
 
@@ -63,7 +95,7 @@ export default function AdminPage() {
       return found ? { role: r.key, name: found.name, email: found.email, password: '' } : { role: r.key, name: '', email: '', password: '' };
     });
     setEditLodgeForm({
-      name: l.name, lodgeNumber: l.lodgeNumber || '', rite: l.rite || '', obedience: l.obedience,
+      name: l.name, lodgeNumber: l.lodgeNumber || '', rite: l.rite || '', obedienceId: l.obedienceId,
       city: l.city, meetingLocation: l.meetingLocation, description: l.description || '',
       pmrAccess: !!l.pmrAccess, officers,
     });
@@ -133,10 +165,10 @@ export default function AdminPage() {
       {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)' }}>
-        {['lodges', 'users'].map((t) => (
+        {['lodges', 'users', 'obediences'].map((t) => (
           <button key={t} onClick={() => setTab(t)}
             style={{ background: 'none', border: 'none', padding: '10px 6px', cursor: 'pointer', fontWeight: 600, borderBottom: tab === t ? '2px solid var(--ink)' : '2px solid transparent' }}>
-            {t === 'lodges' ? 'Loges' : 'Utilisateurs'}
+            {{ lodges: 'Loges', users: 'Utilisateurs', obediences: 'Obédiences' }[t]}
           </button>
         ))}
       </div>
@@ -150,7 +182,10 @@ export default function AdminPage() {
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Nom de la loge" required value={lodgeForm.name} onChange={(e) => setLodgeForm({ ...lodgeForm, name: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Numéro de loge" value={lodgeForm.lodgeNumber} onChange={(e) => setLodgeForm({ ...lodgeForm, lodgeNumber: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Rite" value={lodgeForm.rite} onChange={(e) => setLodgeForm({ ...lodgeForm, rite: e.target.value })} />
-              <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Obédience" required value={lodgeForm.obedience} onChange={(e) => setLodgeForm({ ...lodgeForm, obedience: e.target.value })} />
+              <select className="fd-input" style={{ marginBottom: 8 }} required value={lodgeForm.obedienceId} onChange={(e) => setLodgeForm({ ...lodgeForm, obedienceId: e.target.value })}>
+                <option value="">— Sélectionner une obédience —</option>
+                {obediences.map((o) => <option key={o.id} value={o.id}>{o.name}{o.abbreviation ? ` (${o.abbreviation})` : ''}</option>)}
+              </select>
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Orient (ville)" required value={lodgeForm.city} onChange={(e) => setLodgeForm({ ...lodgeForm, city: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Adresse du temple" required value={lodgeForm.meetingLocation} onChange={(e) => setLodgeForm({ ...lodgeForm, meetingLocation: e.target.value })} />
               <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
@@ -177,7 +212,10 @@ export default function AdminPage() {
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Nom de la loge" required value={editLodgeForm.name} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, name: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Numéro de loge" value={editLodgeForm.lodgeNumber} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, lodgeNumber: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Rite" value={editLodgeForm.rite} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, rite: e.target.value })} />
-              <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Obédience" required value={editLodgeForm.obedience} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, obedience: e.target.value })} />
+              <select className="fd-input" style={{ marginBottom: 8 }} required value={editLodgeForm.obedienceId} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, obedienceId: e.target.value })}>
+                <option value="">— Sélectionner une obédience —</option>
+                {obediences.map((o) => <option key={o.id} value={o.id}>{o.name}{o.abbreviation ? ` (${o.abbreviation})` : ''}</option>)}
+              </select>
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Orient (ville)" required value={editLodgeForm.city} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, city: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Adresse du temple" required value={editLodgeForm.meetingLocation} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, meetingLocation: e.target.value })} />
               <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 60 }} placeholder="Description" value={editLodgeForm.description} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, description: e.target.value })} />
@@ -208,7 +246,7 @@ export default function AdminPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <div style={{ fontWeight: 600 }}>{l.name} {l.lodgeNumber && `n°${l.lodgeNumber}`}</div>
-                  <div style={{ fontSize: 12, color: 'var(--slate)' }}>{l.obedience} · {l.city}</div>
+                  <div style={{ fontSize: 12, color: 'var(--slate)' }}>{l.obedience?.name} · {l.city}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => startEditLodge(l)}>Modifier</button>
@@ -257,6 +295,56 @@ export default function AdminPage() {
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line)' }}>
                   <input className="fd-input" placeholder="Nouveau mot de passe" value={pwdValue} onChange={(e) => setPwdValue(e.target.value)} />
                   <button className="fd-button" onClick={() => savePassword(u.id)}>Enregistrer</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'obediences' && (
+        <div>
+          <form onSubmit={createObedience} className="fd-card" style={{ marginBottom: 20 }}>
+            <h3 style={{ marginTop: 0 }}>Nouvelle obédience</h3>
+            <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Nom complet" required value={obedienceForm.name} onChange={(e) => setObedienceForm({ ...obedienceForm, name: e.target.value })} />
+            <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Sigle (facultatif)" value={obedienceForm.abbreviation} onChange={(e) => setObedienceForm({ ...obedienceForm, abbreviation: e.target.value })} />
+            <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 60 }} placeholder="Description (facultatif)" value={obedienceForm.description} onChange={(e) => setObedienceForm({ ...obedienceForm, description: e.target.value })} />
+            <button className="fd-button" type="submit">Ajouter</button>
+          </form>
+
+          <p style={{ fontSize: 12.5, color: 'var(--slate)', marginBottom: 16 }}>
+            La reconnaissance entre obédiences n'est qu'une information affichée aux membres — elle ne bloque jamais une demande de visite, qui reste toujours à la décision du secrétariat de la loge visitée.
+          </p>
+
+          {obediences.map((o) => (
+            <div key={o.id} className="fd-card" style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{o.name} {o.abbreviation && <span style={{ fontWeight: 400, color: 'var(--slate)', fontSize: 12 }}>({o.abbreviation})</span>}</div>
+                  <div style={{ fontSize: 12, color: 'var(--slate)' }}>Reconnaît {o.recognizes.length} obédience(s) · reconnue par {o.recognizedBy.length}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setRecognitionEditorId(recognitionEditorId === o.id ? null : o.id)}>
+                    {recognitionEditorId === o.id ? 'Fermer' : 'Gérer la reconnaissance'}
+                  </button>
+                  <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => deleteObedience(o)}>Supprimer</button>
+                </div>
+              </div>
+
+              {recognitionEditorId === o.id && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--slate)', marginBottom: 8 }}>
+                    Obédiences que <strong>{o.name}</strong> reconnaît :
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 6 }}>
+                    {obediences.filter((other) => other.id !== o.id).map((other) => (
+                      <label key={other.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={o.recognizes.includes(other.id)} onChange={() => toggleRecognition(o, other.id)} />
+                        {other.name}
+                        {o.recognizedBy.includes(other.id) && o.recognizes.includes(other.id) && <span style={{ fontSize: 11, color: 'var(--slate)' }}>(mutuelle)</span>}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
