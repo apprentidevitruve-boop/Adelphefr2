@@ -74,7 +74,7 @@ export async function GET() {
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Tenue du ${m.date.toISOString().slice(0, 10)}</title></head>
 <body style="font-family: Georgia, serif; max-width: 600px; margin: 40px auto;">
 <h1>${lodge.name}${lodge.lodgeNumber ? ' n°' + lodge.lodgeNumber : ''}</h1>
-<p>${lodge.obedience.name}${lodge.rite ? ' — ' + lodge.rite : ''}</p>
+<p>${lodge.obedience?.name || 'Obédience non renseignée'}${lodge.rite ? ' — ' + lodge.rite : ''}</p>
 <h2>Tenue du ${m.date.toISOString().slice(0, 10)} à ${m.time}</h2>
 <p>Degré minimum : ${degreeLabel(m.minDegree)}</p>
 <h3>Ordre du jour</h3>

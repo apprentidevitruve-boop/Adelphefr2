@@ -30,8 +30,8 @@ model Lodge {
   name             String
   lodgeNumber      String?
   rite             String?
-  obedience        Obedience @relation(fields: [obedienceId], references: [id])
-  obedienceId      String
+  obedience        Obedience? @relation(fields: [obedienceId], references: [id])
+  obedienceId      String?
   city             String
   meetingLocation  String
   description      String   @default("")
