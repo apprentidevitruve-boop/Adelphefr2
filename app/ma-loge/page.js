@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
+import { truncateName } from '../../lib/constants';
 
 export default function MaLogePage() {
   const router = useRouter();
@@ -45,16 +46,19 @@ export default function MaLogePage() {
         <p style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>{me.profile.lodge.description}</p>
       )}
       {me.profile.lodge?.pmrAccess && (
-        <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginBottom: 12 }}>
+        <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginBottom: 12, marginRight: 6 }}>
           ♿ Temple accessible PMR
         </div>
       )}
+      <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginBottom: 12 }}>
+        {me.profile.lodge?.mixte ? 'Mixte' : 'Non mixte'}
+      </div>
       {me.profile.lodge?.officers?.length > 0 && (
         <div className="fd-card" style={{ marginBottom: 20, fontSize: 13 }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 8 }}>Bureau</div>
           {me.profile.lodge.officers.map((o) => (
             <div key={o.id} style={{ marginBottom: 4 }}>
-              {{ president: 'Président.e', secretary: 'Secrétaire', treasurer: 'Trésorier.ère' }[o.role]} : {o.name}{o.email ? ` — ${o.email}` : ''}
+              {{ president: 'Président.e', secretary: 'Secrétaire', treasurer: 'Trésorier.ère' }[o.role]} : {truncateName(o.name)}{o.email ? ` — ${o.email}` : ''}
             </div>
           ))}
         </div>

@@ -92,6 +92,9 @@ export default function CalendrierPage() {
                   ♿ PMR
                 </div>
               )}
+              <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginTop: 6, marginLeft: 6 }}>
+                {m.lodge.mixte ? 'Mixte' : 'Non mixte'}
+              </div>
               <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 6 }}>{m.planches?.[0]?.title}</div>
               <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time} · {m.lodge.city}</div>
               <button className="fd-button" style={{ marginTop: 10 }}>Voir la tenue</button>

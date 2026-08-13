@@ -38,6 +38,8 @@ model Lodge {
   description      String   @default("")
   sealImageUrl     String?
   pmrAccess        Boolean  @default(false)
+  mixte            Boolean  @default(false)
+  mixte            Boolean  @default(false)
   createdAt        DateTime @default(now())
 
   officers      Officer[]

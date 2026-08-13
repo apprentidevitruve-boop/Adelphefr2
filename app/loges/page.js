@@ -66,7 +66,7 @@ export default function LodgesPage() {
                     <div style={{ fontWeight: 600 }}>{l.name}{l.lodgeNumber ? ` n°${l.lodgeNumber}` : ''}</div>
                     <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>
                       {l.obedience?.name}{l.rite ? ` · ${l.rite.name}` : ''} · {l.city}
-                      {l.pmrAccess && ' · ♿ PMR'}
+                      {l.pmrAccess && ' · ♿ PMR'} · {l.mixte ? 'Mixte' : 'Non mixte'}
                     </div>
                   </div>
                 </div>

@@ -42,9 +42,9 @@ export async function PATCH(request, { params }) {
   }
 
   const body = await request.json();
-  const { name, lodgeNumber, riteId, obedienceId, city, meetingLocation, description, pmrAccess, sealImageUrl, officers } = body;
+  const { name, lodgeNumber, riteId, obedienceId, city, meetingLocation, description, pmrAccess, mixte, sealImageUrl, officers } = body;
 
-  const data = { description, pmrAccess: !!pmrAccess, sealImageUrl, riteId: riteId || null };
+  const data = { description, pmrAccess: !!pmrAccess, mixte: !!mixte, sealImageUrl, riteId: riteId || null };
   if (isAdmin) {
     Object.assign(data, { name, lodgeNumber, obedienceId, city, meetingLocation });
   }

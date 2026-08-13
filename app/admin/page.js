@@ -87,7 +87,7 @@ export default function AdminPage() {
 
   // --- Nouvelle loge ---
   const blankOfficers = () => OFFICER_ROLES.map((r) => ({ role: r.key, name: '', email: '', password: '' }));
-  const blankLodge = { name: '', lodgeNumber: '', riteId: '', obedienceId: '', city: '', meetingLocation: '', description: '', pmrAccess: false, sealImageUrl: '', officers: blankOfficers() };
+  const blankLodge = { name: '', lodgeNumber: '', riteId: '', obedienceId: '', city: '', meetingLocation: '', description: '', pmrAccess: false, mixte: false, sealImageUrl: '', officers: blankOfficers() };
   const [lodgeForm, setLodgeForm] = useState(blankLodge);
   const [showLodgeForm, setShowLodgeForm] = useState(false);
 
@@ -134,7 +134,7 @@ export default function AdminPage() {
     setEditLodgeForm({
       name: l.name, lodgeNumber: l.lodgeNumber || '', riteId: l.riteId || '', obedienceId: l.obedienceId,
       city: l.city, meetingLocation: l.meetingLocation, description: l.description || '',
-      pmrAccess: !!l.pmrAccess, sealImageUrl: l.sealImageUrl || '', officers,
+      pmrAccess: !!l.pmrAccess, mixte: !!l.mixte, sealImageUrl: l.sealImageUrl || '', officers,
     });
     setShowLodgeForm(false);
   };
@@ -228,9 +228,13 @@ export default function AdminPage() {
               </select>
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Orient (ville)" required value={lodgeForm.city} onChange={(e) => setLodgeForm({ ...lodgeForm, city: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Adresse du temple" required value={lodgeForm.meetingLocation} onChange={(e) => setLodgeForm({ ...lodgeForm, meetingLocation: e.target.value })} />
-              <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                 <input type="checkbox" checked={lodgeForm.pmrAccess} onChange={(e) => setLodgeForm({ ...lodgeForm, pmrAccess: e.target.checked })} />
                 Temple accessible PMR
+              </label>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+                <input type="checkbox" checked={lodgeForm.mixte} onChange={(e) => setLodgeForm({ ...lodgeForm, mixte: e.target.checked })} />
+                Loge mixte
               </label>
 
               <div style={{ marginBottom: 12 }}>
@@ -268,9 +272,13 @@ export default function AdminPage() {
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Orient (ville)" required value={editLodgeForm.city} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, city: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Adresse du temple" required value={editLodgeForm.meetingLocation} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, meetingLocation: e.target.value })} />
               <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 60 }} placeholder="Description" value={editLodgeForm.description} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, description: e.target.value })} />
-              <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                 <input type="checkbox" checked={editLodgeForm.pmrAccess} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, pmrAccess: e.target.checked })} />
                 Temple accessible PMR
+              </label>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+                <input type="checkbox" checked={editLodgeForm.mixte} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, mixte: e.target.checked })} />
+                Loge mixte
               </label>
 
               <div style={{ marginBottom: 12 }}>

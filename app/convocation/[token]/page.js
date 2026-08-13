@@ -49,10 +49,13 @@ export default function ConvocationPage({ params }) {
         </div>
         <p style={{ fontSize: 14 }}>{new Date(meeting.date).toLocaleDateString('fr-FR')} à {meeting.time} — {meeting.lodge.meetingLocation}</p>
         {meeting.lodge.pmrAccess && (
-          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginBottom: 8 }}>
+          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginBottom: 8, marginRight: 6 }}>
             ♿ Temple accessible PMR
           </div>
         )}
+        <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginBottom: 8 }}>
+          {meeting.lodge.mixte ? 'Mixte' : 'Non mixte'}
+        </div>
         <div style={{ fontSize: 12, color: 'var(--slate)', textTransform: 'uppercase', marginTop: 16 }}>Ordre du jour</div>
         {meeting.openingPoints.map((p) => <div key={p.id} style={{ margin: '6px 0', color: 'var(--slate)' }}>{p.title}</div>)}
         {meeting.planches.map((p) => <div key={p.id} style={{ margin: '6px 0', fontWeight: 600 }}>{p.title}</div>)}

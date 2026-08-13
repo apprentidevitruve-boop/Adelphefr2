@@ -63,13 +63,22 @@ export default function MeetingDetailPage({ params }) {
     load();
   };
 
-  const suggestToFriend = () => {
-    const link = `${window.location.origin}/tenues/${meeting.id}`;
-    const subject = encodeURIComponent(`Une tenue qui pourrait vous intéresser — ${meeting.lodge.name}`);
-    const body = encodeURIComponent(
-      `Bonjour,\n\nJe pense que cette tenue pourrait vous intéresser :\n\n${meeting.lodge.name}\n${new Date(meeting.date).toLocaleDateString('fr-FR')} à ${meeting.time}\nSujet : ${meeting.planches?.[0]?.title || ''}\n\n${link}\n\nFraternellement,`
-    );
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  const [showSuggest, setShowSuggest] = useState(false);
+  const [suggestEmail, setSuggestEmail] = useState('');
+  const [suggestMessage, setSuggestMessage] = useState('');
+  const [suggestSent, setSuggestSent] = useState('');
+  const sendSuggestion = async (e) => {
+    e.preventDefault();
+    setSuggestSent('');
+    const res = await fetch(`/api/meetings/${meeting.id}/suggest`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ friendEmail: suggestEmail, message: suggestMessage }),
+    });
+    const b = await res.json().catch(() => ({}));
+    if (!res.ok) { setSuggestSent(b.error || 'Erreur.'); return; }
+    setSuggestSent(b.hasAccount ? 'Suggestion envoyée — votre ami(e) a aussi reçu une notification sur son compte Adelphe.' : 'Suggestion envoyée par e-mail.');
+    setSuggestEmail('');
+    setSuggestMessage('');
   };
 
   return (
@@ -90,7 +99,7 @@ export default function MeetingDetailPage({ params }) {
           </Link>
 
           <p style={{ fontSize: 14 }}>{new Date(meeting.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à {meeting.time}</p>
-          <p style={{ fontSize: 13, color: 'var(--slate)' }}>{meeting.lodge.meetingLocation}{meeting.lodge.pmrAccess ? ' · ♿ Accès PMR' : ''}</p>
+          <p style={{ fontSize: 13, color: 'var(--slate)' }}>{meeting.lodge.meetingLocation}{meeting.lodge.pmrAccess ? ' · ♿ Accès PMR' : ''} · {meeting.lodge.mixte ? 'Mixte' : 'Non mixte'}</p>
           <div style={{ fontSize: 12.5, color: 'var(--slate)', marginBottom: 4 }}>Grade minimum : {degreeLabel(meeting.minDegree)}</div>
 
           <div style={{ fontSize: 12, color: 'var(--slate)', textTransform: 'uppercase', marginTop: 16 }}>Ordre du jour</div>
@@ -104,9 +113,22 @@ export default function MeetingDetailPage({ params }) {
             </p>
           )}
 
-          <button onClick={suggestToFriend} style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--ink)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13, padding: 0 }}>
-            Suggérer cette tenue à un ami
-          </button>
+          {!showSuggest ? (
+            <button onClick={() => setShowSuggest(true)} style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--ink)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13, padding: 0 }}>
+              Suggérer cette tenue à un ami
+            </button>
+          ) : (
+            <form onSubmit={sendSuggestion} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Suggérer cette tenue</div>
+              <input className="fd-input" style={{ marginBottom: 8 }} type="email" required placeholder="E-mail de votre ami(e)" value={suggestEmail} onChange={(e) => setSuggestEmail(e.target.value)} />
+              <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 60 }} placeholder="Message (facultatif)" value={suggestMessage} onChange={(e) => setSuggestMessage(e.target.value)} />
+              {suggestSent && <p style={{ fontSize: 13, color: suggestSent.startsWith('Erreur') || suggestSent.includes('invalide') ? 'var(--rose)' : 'var(--ink)' }}>{suggestSent}</p>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="fd-button" type="submit">Envoyer</button>
+                <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowSuggest(false)}>Annuler</button>
+              </div>
+            </form>
+          )}
         </div>
 
         {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}

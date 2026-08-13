@@ -16,8 +16,14 @@ export async function PATCH(request, { params }) {
   const member = await loadOwnMember(auth.profile, params.id);
   if (!member) return jsonError('Membre introuvable.', 404);
 
-  const { degree, city, masonicIdNumber, initiatedAt, passedFellowcraftAt, raisedMasterAt } = await request.json();
+  const { email, degree, city, masonicIdNumber, initiatedAt, passedFellowcraftAt, raisedMasterAt } = await request.json();
   const data = {};
+  if (email !== undefined && email.trim().toLowerCase() !== member.email) {
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await prisma.profile.findUnique({ where: { email: cleanEmail } });
+    if (existing) return jsonError('Un autre compte utilise déjà cet e-mail.', 409);
+    data.email = cleanEmail;
+  }
   if (degree) data.degree = degree;
   if (city !== undefined) data.city = city;
   if (masonicIdNumber !== undefined) data.masonicIdNumber = masonicIdNumber;

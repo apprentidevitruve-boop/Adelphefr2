@@ -19,11 +19,11 @@ export async function POST(request) {
   if (auth.error) return auth.error;
 
   const body = await request.json();
-  const { name, lodgeNumber, riteId, obedienceId, city, meetingLocation, description, pmrAccess, sealImageUrl, officers } = body;
+  const { name, lodgeNumber, riteId, obedienceId, city, meetingLocation, description, pmrAccess, mixte, sealImageUrl, officers } = body;
   if (!name || !obedienceId || !city || !meetingLocation) return jsonError('Champs requis manquants.', 400);
 
   const lodge = await prisma.lodge.create({
-    data: { name, lodgeNumber, riteId: riteId || null, obedienceId, city, meetingLocation, description: description || '', pmrAccess: !!pmrAccess, sealImageUrl: sealImageUrl || null },
+    data: { name, lodgeNumber, riteId: riteId || null, obedienceId, city, meetingLocation, description: description || '', pmrAccess: !!pmrAccess, mixte: !!mixte, sealImageUrl: sealImageUrl || null },
     include: { obedience: true, rite: true },
   });
 

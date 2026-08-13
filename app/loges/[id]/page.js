@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../../components/AppHeader';
-import { recognitionStatus } from '../../../lib/constants';
+import { recognitionStatus, truncateName } from '../../../lib/constants';
 
 const OFFICER_LABEL = { president: 'Président.e', secretary: 'Secrétaire', treasurer: 'Trésorier.ère' };
 
@@ -58,6 +58,7 @@ export default function LodgeDetailPage({ params }) {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px' }}>{lodge.city}</span>
             {lodge.pmrAccess && <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px' }}>♿ Temple accessible PMR</span>}
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px' }}>{lodge.mixte ? 'Mixte' : 'Non mixte'}</span>
             {isOwnLodge && <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px' }}>Votre loge</span>}
             {!isOwnLodge && rec && (
               <span style={{
@@ -77,7 +78,7 @@ export default function LodgeDetailPage({ params }) {
             <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12, marginTop: 12, fontSize: 13 }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 6 }}>Bureau</div>
               {lodge.officers.map((o) => (
-                <div key={o.id} style={{ marginBottom: 3 }}>{OFFICER_LABEL[o.role]} : {o.name}{o.email ? ` — ${o.email}` : ''}</div>
+                <div key={o.id} style={{ marginBottom: 3 }}>{OFFICER_LABEL[o.role]} : {truncateName(o.name)}{o.email ? ` — ${o.email}` : ''}</div>
               ))}
             </div>
           )}

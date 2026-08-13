@@ -45,6 +45,7 @@ export default function SecretariatPage() {
 
   const updateList = (key, i, value) => setForm((f) => ({ ...f, [key]: f[key].map((v, idx) => idx === i ? value : v) }));
   const addToList = (key) => setForm((f) => ({ ...f, [key]: [...f[key], ''] }));
+  const removeFromList = (key, i) => setForm((f) => ({ ...f, [key]: f[key].filter((_, idx) => idx !== i) }));
   const movePoint = (key, i, direction) => setForm((f) => {
     const list = [...f[key]];
     const target = i + direction;
@@ -122,7 +123,7 @@ export default function SecretariatPage() {
   const startEditMember = (m) => {
     setEditingMemberId(m.id);
     setEditMemberForm({
-      degree: m.degree, city: m.city || '', masonicIdNumber: m.masonicIdNumber || '',
+      email: m.email, degree: m.degree, city: m.city || '', masonicIdNumber: m.masonicIdNumber || '',
       initiatedAt: m.initiatedAt ? m.initiatedAt.slice(0, 10) : '',
       passedFellowcraftAt: m.passedFellowcraftAt ? m.passedFellowcraftAt.slice(0, 10) : '',
       raisedMasterAt: m.raisedMasterAt ? m.raisedMasterAt.slice(0, 10) : '',
@@ -149,7 +150,7 @@ export default function SecretariatPage() {
   // --- Ma loge (informations de base, accessible au bureau) ---
   const [lodgeForm, setLodgeForm] = useState(null);
   useEffect(() => {
-    if (lodge) setLodgeForm({ riteId: lodge.riteId || '', description: lodge.description || '', pmrAccess: !!lodge.pmrAccess, sealImageUrl: lodge.sealImageUrl || '' });
+    if (lodge) setLodgeForm({ riteId: lodge.riteId || '', description: lodge.description || '', pmrAccess: !!lodge.pmrAccess, mixte: !!lodge.mixte, sealImageUrl: lodge.sealImageUrl || '' });
   }, [lodge]);
   const [sealUploading, setSealUploading] = useState(false);
   const uploadSeal = async (e) => {
@@ -275,6 +276,11 @@ export default function SecretariatPage() {
           <button key={t} onClick={() => setTab(t)}
             style={{ background: 'none', border: 'none', padding: '10px 6px', cursor: 'pointer', fontWeight: 600, borderBottom: tab === t ? '2px solid var(--ink)' : '2px solid transparent' }}>
             {{ meetings: 'Tenues', requests: 'Demandes', members: 'Membres', documents: 'Documents', visitors: 'Visiteurs', lodge: 'Ma loge' }[t]}
+            {t === 'requests' && requests.filter((r) => r.status === 'pending').length > 0 && (
+              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: '#fff', background: 'var(--rose)', borderRadius: 20, padding: '1px 7px' }}>
+                {requests.filter((r) => r.status === 'pending').length}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -308,6 +314,7 @@ export default function SecretariatPage() {
                   <button type="button" disabled={i === form.openingPoints.length - 1} onClick={() => movePoint('openingPoints', i, 1)} style={{ background: 'none', border: 'none', cursor: i === form.openingPoints.length - 1 ? 'default' : 'pointer', opacity: i === form.openingPoints.length - 1 ? 0.3 : 1, lineHeight: '10px', fontSize: 11 }}>▼</button>
                 </div>
                 <input className="fd-input" value={p} onChange={(e) => updateList('openingPoints', i, e.target.value)} />
+                <button type="button" onClick={() => removeFromList('openingPoints', i)} title="Supprimer" style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>×</button>
               </div>
             ))}
             <button type="button" onClick={() => addToList('openingPoints')} style={{ background: 'none', border: 'none', fontSize: 12.5, cursor: 'pointer', marginBottom: 12 }}>+ Ajouter</button>
@@ -320,6 +327,7 @@ export default function SecretariatPage() {
                   <button type="button" disabled={i === form.planches.length - 1} onClick={() => movePoint('planches', i, 1)} style={{ background: 'none', border: 'none', cursor: i === form.planches.length - 1 ? 'default' : 'pointer', opacity: i === form.planches.length - 1 ? 0.3 : 1, lineHeight: '10px', fontSize: 11 }}>▼</button>
                 </div>
                 <input className="fd-input" placeholder={`Sujet ${i + 1}`} value={p} onChange={(e) => updateList('planches', i, e.target.value)} />
+                <button type="button" onClick={() => removeFromList('planches', i)} title="Supprimer" style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>×</button>
               </div>
             ))}
             <button type="button" onClick={() => addToList('planches')} style={{ background: 'none', border: 'none', fontSize: 12.5, cursor: 'pointer', marginBottom: 12 }}>+ Ajouter</button>
@@ -332,6 +340,7 @@ export default function SecretariatPage() {
                   <button type="button" disabled={i === form.closingPoints.length - 1} onClick={() => movePoint('closingPoints', i, 1)} style={{ background: 'none', border: 'none', cursor: i === form.closingPoints.length - 1 ? 'default' : 'pointer', opacity: i === form.closingPoints.length - 1 ? 0.3 : 1, lineHeight: '10px', fontSize: 11 }}>▼</button>
                 </div>
                 <input className="fd-input" value={p} onChange={(e) => updateList('closingPoints', i, e.target.value)} />
+                <button type="button" onClick={() => removeFromList('closingPoints', i)} title="Supprimer" style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>×</button>
               </div>
             ))}
             <button type="button" onClick={() => addToList('closingPoints')} style={{ background: 'none', border: 'none', fontSize: 12.5, cursor: 'pointer', marginBottom: 16 }}>+ Ajouter</button>
@@ -438,6 +447,7 @@ export default function SecretariatPage() {
 
               {editingMemberId === m.id && editMemberForm && (
                 <form onSubmit={saveMemberEdit} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                  <input className="fd-input" style={{ marginBottom: 8 }} type="email" required placeholder="E-mail" value={editMemberForm.email} onChange={(e) => setEditMemberForm({ ...editMemberForm, email: e.target.value })} />
                   <select className="fd-input" style={{ marginBottom: 8 }} value={editMemberForm.degree} onChange={(e) => setEditMemberForm({ ...editMemberForm, degree: e.target.value })}>
                     {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
                   </select>
@@ -552,9 +562,13 @@ export default function SecretariatPage() {
               {rites.map((r) => <option key={r.id} value={r.id}>{r.name}{r.abbreviation ? ` (${r.abbreviation})` : ''}</option>)}
             </select>
             <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 80 }} placeholder="Description de la loge" value={lodgeForm.description} onChange={(e) => setLodgeForm({ ...lodgeForm, description: e.target.value })} />
-            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
               <input type="checkbox" checked={lodgeForm.pmrAccess} onChange={(e) => setLodgeForm({ ...lodgeForm, pmrAccess: e.target.checked })} />
               Temple accessible aux personnes à mobilité réduite (PMR)
+            </label>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+              <input type="checkbox" checked={lodgeForm.mixte} onChange={(e) => setLodgeForm({ ...lodgeForm, mixte: e.target.checked })} />
+              Loge mixte
             </label>
             <button className="fd-button" type="submit">Enregistrer</button>
           </form>
