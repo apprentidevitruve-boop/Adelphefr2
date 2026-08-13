@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { DEGREES } from '../../../lib/constants';
 
 export default function ConvocationPage({ params }) {
   const [meeting, setMeeting] = useState(null);
@@ -8,6 +9,9 @@ export default function ConvocationPage({ params }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [degree, setDegree] = useState('apprentice');
+  const [visitorLodge, setVisitorLodge] = useState('');
+  const [visitorObedience, setVisitorObedience] = useState('');
   const [wantsAgapes, setWantsAgapes] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +30,10 @@ export default function ConvocationPage({ params }) {
     if (!firstName || !lastName || !email) { setError('Merci de renseigner votre prénom, nom et e-mail.'); return; }
     const res = await fetch('/api/guest-visit-request', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ convocationToken: params.token, guestName: `${firstName} ${lastName}`, guestEmail: email, wantsAgapes }),
+      body: JSON.stringify({
+        convocationToken: params.token, guestName: `${firstName} ${lastName}`, guestEmail: email,
+        guestDegree: degree, guestLodge: visitorLodge, guestObedience: visitorObedience, wantsAgapes,
+      }),
     });
     if (!res.ok) { const b = await res.json().catch(() => ({})); setError(b.error || 'Erreur.'); return; }
     setSent(true);
@@ -87,6 +94,13 @@ export default function ConvocationPage({ params }) {
               <input className="fd-input" placeholder="Nom" value={lastName} onChange={(e) => setLastName(e.target.value)} />
             </div>
             <input className="fd-input" style={{ marginBottom: 10 }} type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <select className="fd-input" value={degree} onChange={(e) => setDegree(e.target.value)}>
+                {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+              </select>
+              <input className="fd-input" placeholder="Votre loge" value={visitorLodge} onChange={(e) => setVisitorLodge(e.target.value)} />
+              <input className="fd-input" placeholder="Votre obédience" value={visitorObedience} onChange={(e) => setVisitorObedience(e.target.value)} />
+            </div>
             {meeting.agapesPrice != null && (
               <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                 <input type="checkbox" checked={wantsAgapes} onChange={(e) => setWantsAgapes(e.target.checked)} />

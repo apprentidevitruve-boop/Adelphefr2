@@ -197,6 +197,9 @@ model VisitRequest {
   profileId       String?
   guestName       String?
   guestEmail      String?
+  guestDegree     String?  // grade déclaré par un visiteur externe (non-membre du réseau)
+  guestLodge      String?
+  guestObedience  String?
   status          String   @default("pending") // pending | approved | rejected
   wantsAgapes     Boolean  @default(false)
   wantsVegetarian Boolean  @default(false)

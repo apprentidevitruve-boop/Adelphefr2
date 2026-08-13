@@ -15,6 +15,8 @@ export default function CalendrierPage() {
   const [cityFilter, setCityFilter] = useState('all');
   const [riteFilter, setRiteFilter] = useState('all');
   const [degreeFilter, setDegreeFilter] = useState('all');
+  const [pmrOnly, setPmrOnly] = useState(false);
+  const [nonMixteOnly, setNonMixteOnly] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -41,7 +43,9 @@ export default function CalendrierPage() {
     .filter((m) => lodgeFilter === 'all' || m.lodgeId === lodgeFilter)
     .filter((m) => cityFilter === 'all' || m.lodge.city === cityFilter)
     .filter((m) => riteFilter === 'all' || m.lodge.riteId === riteFilter)
-    .filter((m) => degreeFilter === 'all' || m.minDegree === degreeFilter);
+    .filter((m) => degreeFilter === 'all' || m.minDegree === degreeFilter)
+    .filter((m) => !pmrOnly || m.lodge.pmrAccess)
+    .filter((m) => !nonMixteOnly || !m.lodge.mixte);
 
   return (
     <div>
@@ -67,6 +71,14 @@ export default function CalendrierPage() {
           <option value="all">Tous les grades</option>
           {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
         </select>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, cursor: 'pointer' }}>
+          <input type="checkbox" checked={pmrOnly} onChange={(e) => setPmrOnly(e.target.checked)} />
+          ♿ PMR uniquement
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, cursor: 'pointer' }}>
+          <input type="checkbox" checked={nonMixteOnly} onChange={(e) => setNonMixteOnly(e.target.checked)} />
+          Non mixte uniquement
+        </label>
       </div>
 
       {filtered.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucune tenue ne correspond à ces filtres.</p> : (

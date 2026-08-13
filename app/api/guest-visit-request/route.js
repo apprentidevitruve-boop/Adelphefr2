@@ -15,7 +15,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const { convocationToken, guestName, guestEmail, wantsAgapes, wantsVegetarian } = await request.json();
+  const { convocationToken, guestName, guestEmail, guestDegree, guestLodge, guestObedience, wantsAgapes, wantsVegetarian } = await request.json();
   if (!convocationToken || !guestName || !guestEmail) return jsonError('Nom, e-mail et jeton requis.', 400);
 
   const meeting = await prisma.meeting.findUnique({ where: { convocationToken } });
@@ -26,6 +26,9 @@ export async function POST(request) {
       meetingId: meeting.id,
       guestName,
       guestEmail,
+      guestDegree: guestDegree || null,
+      guestLodge: guestLodge || null,
+      guestObedience: guestObedience || null,
       wantsAgapes: !!wantsAgapes,
       wantsVegetarian: !!wantsAgapes && !!wantsVegetarian,
     },

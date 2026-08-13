@@ -387,6 +387,11 @@ export default function SecretariatPage() {
               <div>
                 <div style={{ fontWeight: 600 }}>{r.profile ? r.profile.name : r.guestName}{!r.profile && ' (visiteur non inscrit)'}</div>
                 <div style={{ fontSize: 13, color: 'var(--slate)' }}>{r.meeting?.planches?.[0]?.title} · {new Date(r.meeting?.date).toLocaleDateString('fr-FR')}</div>
+                {!r.profile && (r.guestDegree || r.guestLodge || r.guestObedience) && (
+                  <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 2 }}>
+                    {[degreeLabel(r.guestDegree), r.guestLodge, r.guestObedience].filter(Boolean).join(' · ')}
+                  </div>
+                )}
               </div>
               {r.status === 'pending' ? (
                 <div style={{ display: 'flex', gap: 8 }}>

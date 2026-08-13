@@ -192,6 +192,13 @@ export default function AdminPage() {
     return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.adelpheId || '').toLowerCase().includes(q);
   });
 
+  const [lodgeSearch, setLodgeSearch] = useState('');
+  const filteredLodges = lodges.filter((l) => {
+    const q = lodgeSearch.trim().toLowerCase();
+    if (!q) return true;
+    return l.name.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || (l.obedience?.name || '').toLowerCase().includes(q) || (l.rite?.name || '').toLowerCase().includes(q);
+  });
+
   if (!me) return <div style={{ padding: 40 }}>Chargement…</div>;
 
   return (
@@ -304,7 +311,17 @@ export default function AdminPage() {
             </form>
           )}
 
-          {lodges.map((l) => (
+          <input
+            className="fd-input"
+            style={{ marginBottom: 16 }}
+            placeholder="Rechercher par nom, orient, obédience ou rite…"
+            value={lodgeSearch}
+            onChange={(e) => setLodgeSearch(e.target.value)}
+          />
+
+          {filteredLodges.length === 0 ? (
+            <p style={{ color: 'var(--slate)' }}>Aucune loge ne correspond à cette recherche.</p>
+          ) : filteredLodges.map((l) => (
             <div key={l.id} className="fd-card" style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
