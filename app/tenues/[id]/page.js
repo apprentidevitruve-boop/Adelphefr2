@@ -16,6 +16,10 @@ export default function MeetingDetailPage({ params }) {
   const [notice, setNotice] = useState('');
   const [wantsAgapes, setWantsAgapes] = useState(false);
   const [wantsVegetarian, setWantsVegetarian] = useState(false);
+  const [showSuggest, setShowSuggest] = useState(false);
+  const [suggestEmail, setSuggestEmail] = useState('');
+  const [suggestMessage, setSuggestMessage] = useState('');
+  const [suggestSent, setSuggestSent] = useState('');
 
   const load = async () => {
     const meRes = await fetch('/api/me');
@@ -30,13 +34,17 @@ export default function MeetingDetailPage({ params }) {
   useEffect(() => { load(); }, [params.id]);
 
   if (notFound) return <div style={{ padding: 40, textAlign: 'center' }}>Tenue introuvable ou non accessible à votre grade.</div>;
-  if (!me || !meeting) return <div style={{ padding: 40 }}>Chargement…</div>;
+  if (!me || !meeting || !meeting.lodge) return <div style={{ padding: 40 }}>Chargement…</div>;
 
   const isOwnLodge = meeting.lodgeId === me.profile.lodgeId;
   const mine = meeting.attendees?.[0];
   const confirmedPresence = mine?.confirmedPresence || false;
   const wantsAgapesConfirmed = mine?.wantsAgapes || false;
   const wantsVegetarianConfirmed = mine?.wantsVegetarian || false;
+  const openingPoints = meeting.openingPoints || [];
+  const planches = meeting.planches || [];
+  const closingPoints = meeting.closingPoints || [];
+  const agapesPrice = meeting.agapesPrice != null ? Number(meeting.agapesPrice) : null;
 
   const toggleAttendance = async (field, currentValue) => {
     await fetch(`/api/meetings/${meeting.id}/attendance`, {
@@ -63,10 +71,6 @@ export default function MeetingDetailPage({ params }) {
     load();
   };
 
-  const [showSuggest, setShowSuggest] = useState(false);
-  const [suggestEmail, setSuggestEmail] = useState('');
-  const [suggestMessage, setSuggestMessage] = useState('');
-  const [suggestSent, setSuggestSent] = useState('');
   const sendSuggestion = async (e) => {
     e.preventDefault();
     setSuggestSent('');
@@ -103,13 +107,13 @@ export default function MeetingDetailPage({ params }) {
           <div style={{ fontSize: 12.5, color: 'var(--slate)', marginBottom: 4 }}>Grade minimum : {degreeLabel(meeting.minDegree)}</div>
 
           <div style={{ fontSize: 12, color: 'var(--slate)', textTransform: 'uppercase', marginTop: 16 }}>Ordre du jour</div>
-          {meeting.openingPoints.map((p) => <div key={p.id} style={{ margin: '6px 0', color: 'var(--slate)' }}>{p.title}</div>)}
-          {meeting.planches.map((p) => <div key={p.id} style={{ margin: '6px 0', fontWeight: 600 }}>{p.title}</div>)}
-          {meeting.closingPoints.map((p) => <div key={p.id} style={{ margin: '6px 0', color: 'var(--slate)' }}>{p.title}</div>)}
+          {openingPoints.map((p) => <div key={p.id} style={{ margin: '6px 0', color: 'var(--slate)' }}>{p.title}</div>)}
+          {planches.map((p) => <div key={p.id} style={{ margin: '6px 0', fontWeight: 600 }}>{p.title}</div>)}
+          {closingPoints.map((p) => <div key={p.id} style={{ margin: '6px 0', color: 'var(--slate)' }}>{p.title}</div>)}
 
-          {meeting.agapesPrice != null && (
+          {agapesPrice != null && (
             <p style={{ fontSize: 13, borderTop: '1px solid var(--line)', paddingTop: 12, marginTop: 16 }}>
-              Agapes fraternelles — {meeting.agapesPrice} €{meeting.vegetarianOption ? ' (menu végétarien disponible)' : ''}
+              Agapes fraternelles — {agapesPrice} €{meeting.vegetarianOption ? ' (menu végétarien disponible)' : ''}
             </p>
           )}
 
@@ -144,7 +148,7 @@ export default function MeetingDetailPage({ params }) {
               >
                 {confirmedPresence ? '✓ Présence confirmée' : 'Je confirme ma présence'}
               </button>
-              {meeting.agapesPrice != null && (
+              {agapesPrice != null && (
                 <button
                   className="fd-button"
                   style={{ background: wantsAgapesConfirmed ? 'var(--ink)' : 'transparent', color: wantsAgapesConfirmed ? '#fff' : 'var(--ink)', border: '1.5px solid var(--ink)' }}
@@ -175,10 +179,10 @@ export default function MeetingDetailPage({ params }) {
               </div>
             ) : (
               <div>
-                {meeting.agapesPrice != null && (
+                {agapesPrice != null && (
                   <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <input type="checkbox" checked={wantsAgapes} onChange={(e) => setWantsAgapes(e.target.checked)} />
-                    Je resterais aux agapes ({meeting.agapesPrice} €)
+                    Je resterais aux agapes ({agapesPrice} €)
                   </label>
                 )}
                 {wantsAgapes && meeting.vegetarianOption && (
