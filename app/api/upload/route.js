@@ -4,7 +4,7 @@ import { uploadFile } from '../../../lib/storage';
 export const runtime = 'nodejs';
 
 export async function POST(request) {
-  const auth = await requireRole(BUREAU_ROLES);
+  const auth = await requireRole([...BUREAU_ROLES, 'admin']);
   if (auth.error) return auth.error;
 
   const formData = await request.formData();

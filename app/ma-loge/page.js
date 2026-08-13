@@ -32,10 +32,18 @@ export default function MaLogePage() {
       <AppHeader profile={me.profile} />
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 40px' }}>
       <h1 className="fd-display">Ma loge</h1>
-      <p style={{ color: 'var(--slate)', marginBottom: 8 }}>
-        {me.profile.lodge?.name} — {me.profile.lodge?.city}
-        {me.profile.lodge?.rite && ` · ${me.profile.lodge.rite.name}`}
-      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+        {me.profile.lodge?.sealImageUrl ? (
+          <img src={me.profile.lodge.sealImageUrl} alt="Sceau de la loge" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+        ) : null}
+        <p style={{ color: 'var(--slate)', margin: 0 }}>
+          {me.profile.lodge?.name} — {me.profile.lodge?.city}
+          {me.profile.lodge?.rite && ` · ${me.profile.lodge.rite.name}`}
+        </p>
+      </div>
+      {me.profile.lodge?.description && (
+        <p style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>{me.profile.lodge.description}</p>
+      )}
       {me.profile.lodge?.pmrAccess && (
         <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginBottom: 12 }}>
           ♿ Temple accessible PMR
