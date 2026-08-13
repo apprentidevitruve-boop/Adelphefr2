@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DEGREES, recognitionStatus } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
@@ -29,28 +30,6 @@ export default function CalendrierPage() {
       setObediences((await obediencesRes.json()).obediences || []);
     })();
   }, []);
-
-  const [requesting, setRequesting] = useState(null);
-  const [requested, setRequested] = useState(new Set());
-  const [notice, setNotice] = useState('');
-
-  const requestVisit = async (meetingId) => {
-    setRequesting(meetingId);
-    setNotice('');
-    const res = await fetch('/api/visit-requests', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ meetingId }),
-    });
-    setRequesting(null);
-    if (res.ok) {
-      setRequested((prev) => new Set(prev).add(meetingId));
-      setNotice('Demande de visite envoyée.');
-    } else {
-      const b = await res.json().catch(() => ({}));
-      setNotice(b.error || 'Erreur lors de la demande.');
-      if (res.status === 409) setRequested((prev) => new Set(prev).add(meetingId));
-    }
-  };
 
   if (!me) return <div style={{ padding: 40 }}>Chargement…</div>;
 
@@ -90,14 +69,13 @@ export default function CalendrierPage() {
         </select>
       </div>
 
-      {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
-
       {filtered.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucune tenue ne correspond à ces filtres.</p> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map((m) => {
             const rec = recognitionStatus(me.profile.lodge?.obedienceId, m.lodge.obedienceId, obediences);
             return (
-            <div key={m.id} className="fd-card">
+            <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div className="fd-card" style={{ cursor: 'pointer' }}>
               <div style={{ fontWeight: 600 }}>{m.lodge.name}</div>
               {m.lodge.rite && <div style={{ fontSize: 12, color: 'var(--slate)' }}>{m.lodge.rite.name}</div>}
               {rec && (
@@ -116,15 +94,9 @@ export default function CalendrierPage() {
               )}
               <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 6 }}>{m.planches?.[0]?.title}</div>
               <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time} · {m.lodge.city}</div>
-              <button
-                className="fd-button"
-                style={{ marginTop: 10, background: requested.has(m.id) ? 'var(--slate)' : 'var(--ink)' }}
-                disabled={requested.has(m.id) || requesting === m.id}
-                onClick={() => requestVisit(m.id)}
-              >
-                {requested.has(m.id) ? 'Demande envoyée' : requesting === m.id ? 'Envoi…' : 'Demander à visiter'}
-              </button>
+              <button className="fd-button" style={{ marginTop: 10 }}>Voir la tenue</button>
             </div>
+            </Link>
             );
           })}
         </div>

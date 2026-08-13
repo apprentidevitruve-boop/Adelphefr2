@@ -1,10 +1,40 @@
 import { prisma } from '../../../../lib/prisma';
 import { requireRole, BUREAU_ROLES, json, jsonError } from '../../../../lib/auth';
+import { degreeRank } from '../../../../lib/constants';
 
 async function loadOwnMeeting(profile, id) {
   const meeting = await prisma.meeting.findUnique({ where: { id } });
   if (!meeting || meeting.lodgeId !== profile.lodgeId) return null;
   return meeting;
+}
+
+// Page tenue dédiée : programme complet, identité de la loge
+// organisatrice, et — pour les membres d'une AUTRE loge — le statut
+// de leur éventuelle demande de visite déjà envoyée.
+export async function GET(request, { params }) {
+  const auth = await requireRole(null);
+  if (auth.error) return auth.error;
+  const { profile } = auth;
+
+  const meeting = await prisma.meeting.findUnique({
+    where: { id: params.id },
+    include: {
+      lodge: { include: { obedience: true, rite: true, officers: true } },
+      openingPoints: true, planches: true, closingPoints: true,
+      attendees: { where: { profileId: profile.id } },
+    },
+  });
+  if (!meeting) return jsonError('Tenue introuvable.', 404);
+  if (degreeRank(meeting.minDegree) > degreeRank(profile.degree)) {
+    return jsonError("Cette tenue n'est pas accessible à votre grade.", 403);
+  }
+
+  let myVisitRequest = null;
+  if (meeting.lodgeId !== profile.lodgeId) {
+    myVisitRequest = await prisma.visitRequest.findFirst({ where: { meetingId: params.id, profileId: profile.id } });
+  }
+
+  return json({ meeting, myVisitRequest });
 }
 
 export async function PATCH(request, { params }) {

@@ -51,3 +51,20 @@ export async function PATCH(request, { params }) {
 
   return json({ ok: true });
 }
+
+// Un membre peut annuler sa PROPRE demande, uniquement tant qu'elle
+// est encore en attente (une fois traitée par le secrétariat, seul le
+// bureau de la loge visitée peut agir dessus).
+export async function DELETE(request, { params }) {
+  const auth = await requireRole(null);
+  if (auth.error) return auth.error;
+  const { profile } = auth;
+
+  const reqRow = await prisma.visitRequest.findUnique({ where: { id: params.id } });
+  if (!reqRow) return jsonError('Demande introuvable.', 404);
+  if (reqRow.profileId !== profile.id) return jsonError('Vous ne pouvez annuler que vos propres demandes.', 403);
+  if (reqRow.status !== 'pending') return jsonError('Cette demande a déjà été traitée, elle ne peut plus être annulée.', 400);
+
+  await prisma.visitRequest.delete({ where: { id: params.id } });
+  return json({ ok: true });
+}

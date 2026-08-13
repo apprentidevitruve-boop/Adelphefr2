@@ -1,5 +1,31 @@
 import { prisma } from '../../../../lib/prisma';
 import { requireRole, BUREAU_ROLES, hashPassword, json, jsonError } from '../../../../lib/auth';
+import { degreeRank } from '../../../../lib/constants';
+
+// Fiche loge publique (au sens : accessible à tout membre connecté du
+// réseau, pas seulement au bureau) — identité complète, bureau, et
+// tenues à venir filtrées par le grade du visiteur.
+export async function GET(request, { params }) {
+  const auth = await requireRole(null);
+  if (auth.error) return auth.error;
+  const { profile } = auth;
+
+  const lodge = await prisma.lodge.findUnique({
+    where: { id: params.id },
+    include: { obedience: true, rite: true, officers: true },
+  });
+  if (!lodge) return jsonError('Loge introuvable.', 404);
+
+  const meetings = await prisma.meeting.findMany({
+    where: { lodgeId: params.id, date: { gte: new Date(new Date().toISOString().slice(0, 10)) } },
+    include: { planches: true },
+    orderBy: { date: 'asc' },
+  });
+  const rank = degreeRank(profile.degree);
+  const visibleMeetings = meetings.filter((m) => degreeRank(m.minDegree) <= rank);
+
+  return json({ lodge, meetings: visibleMeetings });
+}
 
 export async function PATCH(request, { params }) {
   const auth = await requireRole([...BUREAU_ROLES, 'admin']);

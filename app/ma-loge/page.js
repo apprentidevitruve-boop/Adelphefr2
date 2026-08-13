@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 
@@ -23,21 +24,6 @@ export default function MaLogePage() {
       setDocuments((await documentsRes.json()).documents || []);
     })();
   }, []);
-
-  const reloadMeetings = async () => {
-    const meetingsRes = await fetch('/api/meetings');
-    const allMeetings = (await meetingsRes.json()).meetings || [];
-    setMeetings(allMeetings.filter((m) => m.lodgeId === me.profile.lodgeId));
-  };
-
-  const toggleAttendance = async (meetingId, field, currentValue) => {
-    await fetch(`/api/meetings/${meetingId}/attendance`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [field]: !currentValue }),
-    });
-    reloadMeetings();
-  };
 
   if (!me) return <div style={{ padding: 40 }}>Chargement…</div>;
 
@@ -80,43 +66,23 @@ export default function MaLogePage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {meetings.map((m) => {
               const mine = m.attendees?.[0];
-              const confirmedPresence = mine?.confirmedPresence || false;
-              const wantsAgapes = mine?.wantsAgapes || false;
-              const wantsVegetarian = mine?.wantsVegetarian || false;
               return (
-                <div key={m.id} className="fd-card">
-                  <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
-                  <div style={{ fontSize: 13, color: 'var(--slate)' }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time}</div>
-                  {m.agapesPrice != null && (
-                    <div style={{ fontSize: 12.5, color: 'var(--slate)', marginTop: 4 }}>
-                      Agapes : {m.agapesPrice} €{m.vegetarianOption ? ' (menu végétarien disponible)' : ''}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <button
-                      className="fd-button"
-                      style={{ background: confirmedPresence ? 'var(--ink)' : 'transparent', color: confirmedPresence ? '#fff' : 'var(--ink)', border: '1.5px solid var(--ink)' }}
-                      onClick={() => toggleAttendance(m.id, 'confirmedPresence', confirmedPresence)}
-                    >
-                      {confirmedPresence ? '✓ Présence confirmée' : 'Je confirme ma présence'}
-                    </button>
+                <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div className="fd-card" style={{ cursor: 'pointer' }}>
+                    <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
+                    <div style={{ fontSize: 13, color: 'var(--slate)' }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time}</div>
                     {m.agapesPrice != null && (
-                      <button
-                        className="fd-button"
-                        style={{ background: wantsAgapes ? 'var(--ink)' : 'transparent', color: wantsAgapes ? '#fff' : 'var(--ink)', border: '1.5px solid var(--ink)' }}
-                        onClick={() => toggleAttendance(m.id, 'wantsAgapes', wantsAgapes)}
-                      >
-                        {wantsAgapes ? '✓ Je reste aux agapes' : 'Je reste aux agapes ?'}
-                      </button>
+                      <div style={{ fontSize: 12.5, color: 'var(--slate)', marginTop: 4 }}>
+                        Agapes : {m.agapesPrice} €{m.vegetarianOption ? ' (menu végétarien disponible)' : ''}
+                      </div>
                     )}
-                    {wantsAgapes && m.vegetarianOption && (
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-                        <input type="checkbox" checked={wantsVegetarian} onChange={() => toggleAttendance(m.id, 'wantsVegetarian', wantsVegetarian)} />
-                        Menu végétarien
-                      </label>
+                    {mine?.confirmedPresence && (
+                      <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#2E5B2E', background: '#EAF3EA', borderRadius: 20, padding: '3px 10px', marginTop: 6 }}>
+                        ✓ Présence confirmée
+                      </div>
                     )}
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

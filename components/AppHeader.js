@@ -25,7 +25,9 @@ export default function AppHeader({ profile }) {
           Adelphe
         </Link>
         <Link href="/ma-loge" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Ma loge</Link>
+        <Link href="/loges" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Loges</Link>
         <Link href="/calendrier" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Calendrier</Link>
+        <Link href="/mes-visites" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Mes visites</Link>
         {isBureau && <Link href="/secretariat" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Secrétariat</Link>}
         {profile.role === 'admin' && <Link href="/admin" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Administration</Link>}
       </div>
