@@ -29,7 +29,8 @@ model Lodge {
   id               String   @id @default(uuid())
   name             String
   lodgeNumber      String?
-  rite             String?
+  rite             Rite?     @relation(fields: [riteId], references: [id])
+  riteId           String?
   obedience        Obedience? @relation(fields: [obedienceId], references: [id])
   obedienceId      String?
   city             String
@@ -49,6 +50,16 @@ model Lodge {
 // Président / secrétaire / trésorier désignés pour une loge — simple
 // fiche de contact, indépendante du compte de connexion éventuel de
 // la personne (voir Profile.role pour les droits applicatifs réels).
+
+model Rite {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  abbreviation String?
+  createdAt    DateTime @default(now())
+
+  lodges       Lodge[]
+}
+
 // Une obédience, avec les autres obédiences qu'elle reconnaît. La
 // reconnaissance n'est pas forcément symétrique dans la réalité
 // maçonnique — on modélise donc une relation orientée : "A reconnaît

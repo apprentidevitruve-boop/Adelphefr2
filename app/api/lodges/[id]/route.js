@@ -1,19 +1,35 @@
 import { prisma } from '../../../../lib/prisma';
-import { requireRole, hashPassword, json, jsonError } from '../../../../lib/auth';
+import { requireRole, BUREAU_ROLES, hashPassword, json, jsonError } from '../../../../lib/auth';
 
 export async function PATCH(request, { params }) {
-  const auth = await requireRole(['admin']);
+  const auth = await requireRole([...BUREAU_ROLES, 'admin']);
   if (auth.error) return auth.error;
+  const { profile } = auth;
+  const isAdmin = profile.role === 'admin';
 
-  const { name, lodgeNumber, rite, obedienceId, city, meetingLocation, description, pmrAccess, sealImageUrl, officers } = await request.json();
+  // Un membre du bureau (président/secrétaire/trésorier) ne peut
+  // modifier que sa propre loge, et uniquement les informations de
+  // base — la gestion des officiers (création de comptes) reste
+  // réservée à l'administrateur.
+  if (!isAdmin && params.id !== profile.lodgeId) {
+    return jsonError('Vous ne pouvez modifier que votre propre loge.', 403);
+  }
+
+  const body = await request.json();
+  const { name, lodgeNumber, riteId, obedienceId, city, meetingLocation, description, pmrAccess, sealImageUrl, officers } = body;
+
+  const data = { description, pmrAccess: !!pmrAccess, sealImageUrl, riteId: riteId || null };
+  if (isAdmin) {
+    Object.assign(data, { name, lodgeNumber, obedienceId, city, meetingLocation });
+  }
 
   const lodge = await prisma.lodge.update({
     where: { id: params.id },
-    data: { name, lodgeNumber, rite, obedienceId, city, meetingLocation, description, pmrAccess: !!pmrAccess, sealImageUrl },
-    include: { obedience: true },
+    data,
+    include: { obedience: true, rite: true },
   });
 
-  if (Array.isArray(officers)) {
+  if (isAdmin && Array.isArray(officers)) {
     // On repart d'une liste propre : suppression puis recréation des
     // fiches de contact du bureau pour cette loge.
     await prisma.officer.deleteMany({ where: { lodgeId: params.id } });

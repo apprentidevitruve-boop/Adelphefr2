@@ -56,12 +56,12 @@ export default function CalendrierPage() {
 
   const otherLodges = [...new Map(meetings.map((m) => [m.lodge.id, m.lodge])).values()];
   const cities = [...new Set(otherLodges.map((l) => l.city))];
-  const rites = [...new Set(otherLodges.map((l) => l.rite).filter(Boolean))];
+  const rites = [...new Map(otherLodges.map((l) => l.rite).filter(Boolean).map((r) => [r.id, r])).values()];
 
   const filtered = meetings
     .filter((m) => lodgeFilter === 'all' || m.lodgeId === lodgeFilter)
     .filter((m) => cityFilter === 'all' || m.lodge.city === cityFilter)
-    .filter((m) => riteFilter === 'all' || m.lodge.rite === riteFilter)
+    .filter((m) => riteFilter === 'all' || m.lodge.riteId === riteFilter)
     .filter((m) => degreeFilter === 'all' || m.minDegree === degreeFilter);
 
   return (
@@ -82,7 +82,7 @@ export default function CalendrierPage() {
         </select>
         <select className="fd-input" style={{ width: 180 }} value={riteFilter} onChange={(e) => setRiteFilter(e.target.value)}>
           <option value="all">Tous les rites</option>
-          {rites.map((r) => <option key={r} value={r}>{r}</option>)}
+          {rites.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
         <select className="fd-input" style={{ width: 160 }} value={degreeFilter} onChange={(e) => setDegreeFilter(e.target.value)}>
           <option value="all">Tous les grades</option>
@@ -99,7 +99,7 @@ export default function CalendrierPage() {
             return (
             <div key={m.id} className="fd-card">
               <div style={{ fontWeight: 600 }}>{m.lodge.name}</div>
-              {m.lodge.rite && <div style={{ fontSize: 12, color: 'var(--slate)' }}>{m.lodge.rite}</div>}
+              {m.lodge.rite && <div style={{ fontSize: 12, color: 'var(--slate)' }}>{m.lodge.rite.name}</div>}
               {rec && (
                 <div style={{
                   display: 'inline-block', fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px', marginTop: 6,
@@ -107,6 +107,11 @@ export default function CalendrierPage() {
                   color: rec.level === 'mutual' ? '#2E5B2E' : rec.level === 'partial' ? '#8A6A2A' : 'var(--slate)',
                 }}>
                   {rec.label}
+                </div>
+              )}
+              {m.lodge.pmrAccess && (
+                <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginTop: 6, marginLeft: 6 }}>
+                  ♿ PMR
                 </div>
               )}
               <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 6 }}>{m.planches?.[0]?.title}</div>

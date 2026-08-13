@@ -38,9 +38,21 @@ export default function ConvocationPage({ params }) {
   return (
     <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 20px' }}>
       <div className="fd-card" style={{ marginBottom: 20 }}>
-        <h1 className="fd-display" style={{ margin: '4px 0' }}>{meeting.lodge.name}</h1>
-        {meeting.lodge.rite && <div style={{ fontSize: 13, color: 'var(--slate)' }}>{meeting.lodge.rite}</div>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+          {meeting.lodge.sealImageUrl && (
+            <img src={meeting.lodge.sealImageUrl} alt="Sceau de la loge" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover' }} />
+          )}
+          <div>
+            <h1 className="fd-display" style={{ margin: 0 }}>{meeting.lodge.name}</h1>
+            {meeting.lodge.rite && <div style={{ fontSize: 13, color: 'var(--slate)' }}>{meeting.lodge.rite.name}</div>}
+          </div>
+        </div>
         <p style={{ fontSize: 14 }}>{new Date(meeting.date).toLocaleDateString('fr-FR')} à {meeting.time} — {meeting.lodge.meetingLocation}</p>
+        {meeting.lodge.pmrAccess && (
+          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginBottom: 8 }}>
+            ♿ Temple accessible PMR
+          </div>
+        )}
         <div style={{ fontSize: 12, color: 'var(--slate)', textTransform: 'uppercase', marginTop: 16 }}>Ordre du jour</div>
         {meeting.openingPoints.map((p) => <div key={p.id} style={{ margin: '6px 0', color: 'var(--slate)' }}>{p.title}</div>)}
         {meeting.planches.map((p) => <div key={p.id} style={{ margin: '6px 0', fontWeight: 600 }}>{p.title}</div>)}
@@ -49,6 +61,15 @@ export default function ConvocationPage({ params }) {
           <p style={{ fontSize: 13, borderTop: '1px solid var(--line)', paddingTop: 12, marginTop: 16 }}>
             Agapes fraternelles — {meeting.agapesPrice} €
           </p>
+        )}
+        {meeting.lodge.officers?.length > 0 && (
+          <div style={{ fontSize: 12.5, color: 'var(--slate)', borderTop: '1px solid var(--line)', paddingTop: 12, marginTop: 12 }}>
+            {meeting.lodge.officers.map((o) => (
+              <div key={o.id}>
+                {{ president: 'Président.e', secretary: 'Secrétaire', treasurer: 'Trésorier.ère' }[o.role]} : {o.name}{o.email ? ` — ${o.email}` : ''}
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

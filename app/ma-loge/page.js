@@ -46,7 +46,25 @@ export default function MaLogePage() {
       <AppHeader profile={me.profile} />
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 40px' }}>
       <h1 className="fd-display">Ma loge</h1>
-      <p style={{ color: 'var(--slate)', marginBottom: 24 }}>{me.profile.lodge?.name} — {me.profile.lodge?.city}</p>
+      <p style={{ color: 'var(--slate)', marginBottom: 8 }}>
+        {me.profile.lodge?.name} — {me.profile.lodge?.city}
+        {me.profile.lodge?.rite && ` · ${me.profile.lodge.rite.name}`}
+      </p>
+      {me.profile.lodge?.pmrAccess && (
+        <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginBottom: 12 }}>
+          ♿ Temple accessible PMR
+        </div>
+      )}
+      {me.profile.lodge?.officers?.length > 0 && (
+        <div className="fd-card" style={{ marginBottom: 20, fontSize: 13 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 8 }}>Bureau</div>
+          {me.profile.lodge.officers.map((o) => (
+            <div key={o.id} style={{ marginBottom: 4 }}>
+              {{ president: 'Président.e', secretary: 'Secrétaire', treasurer: 'Trésorier.ère' }[o.role]} : {o.name}{o.email ? ` — ${o.email}` : ''}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)' }}>
         {['meetings', 'documents'].map((t) => (

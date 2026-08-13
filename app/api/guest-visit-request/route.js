@@ -8,7 +8,7 @@ export async function GET(request) {
 
   const meeting = await prisma.meeting.findUnique({
     where: { convocationToken: token },
-    include: { lodge: true, openingPoints: true, planches: true, closingPoints: true },
+    include: { lodge: { include: { rite: true, obedience: true, officers: true } }, openingPoints: true, planches: true, closingPoints: true },
   });
   if (!meeting) return jsonError('Convocation introuvable ou expirée.', 404);
   return json({ meeting });

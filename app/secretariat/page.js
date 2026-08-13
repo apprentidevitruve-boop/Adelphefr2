@@ -14,20 +14,26 @@ export default function SecretariatPage() {
   const [requests, setRequests] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [visitors, setVisitors] = useState([]);
+  const [lodge, setLodge] = useState(null);
+  const [rites, setRites] = useState([]);
   const [notice, setNotice] = useState('');
 
   const load = async () => {
     const meRes = await fetch('/api/me');
     if (!meRes.ok) { router.push('/login'); return; }
-    setMe(await meRes.json());
-    const [meetingsRes, membersRes, requestsRes, documentsRes, visitorsRes] = await Promise.all([
-      fetch('/api/meetings'), fetch('/api/members'), fetch('/api/visit-requests'), fetch('/api/documents'), fetch('/api/visitors'),
+    const meBody = await meRes.json();
+    setMe(meBody);
+    const [meetingsRes, membersRes, requestsRes, documentsRes, visitorsRes, lodgesRes, ritesRes] = await Promise.all([
+      fetch('/api/meetings'), fetch('/api/members'), fetch('/api/visit-requests'), fetch('/api/documents'), fetch('/api/visitors'), fetch('/api/lodges'), fetch('/api/rites'),
     ]);
     setMeetings((await meetingsRes.json()).meetings || []);
     setMembers((await membersRes.json()).members || []);
     setRequests((await requestsRes.json()).visitRequests || []);
     setDocuments((await documentsRes.json()).documents || []);
     setVisitors((await visitorsRes.json()).visitors || []);
+    const allLodges = (await lodgesRes.json()).lodges || [];
+    setLodge(allLodges.find((l) => l.id === meBody.profile.lodgeId) || null);
+    setRites((await ritesRes.json()).rites || []);
   };
   useEffect(() => { load(); }, []);
 
@@ -39,6 +45,13 @@ export default function SecretariatPage() {
 
   const updateList = (key, i, value) => setForm((f) => ({ ...f, [key]: f[key].map((v, idx) => idx === i ? value : v) }));
   const addToList = (key) => setForm((f) => ({ ...f, [key]: [...f[key], ''] }));
+  const movePoint = (key, i, direction) => setForm((f) => {
+    const list = [...f[key]];
+    const target = i + direction;
+    if (target < 0 || target >= list.length) return f;
+    [list[i], list[target]] = [list[target], list[i]];
+    return { ...f, [key]: list };
+  });
 
   const meetingToForm = (m) => ({
     lodgeId: m.lodgeId,
@@ -133,11 +146,50 @@ export default function SecretariatPage() {
     load();
   };
 
+  // --- Ma loge (informations de base, accessible au bureau) ---
+  const [lodgeForm, setLodgeForm] = useState(null);
+  useEffect(() => {
+    if (lodge) setLodgeForm({ riteId: lodge.riteId || '', description: lodge.description || '', pmrAccess: !!lodge.pmrAccess, sealImageUrl: lodge.sealImageUrl || '' });
+  }, [lodge]);
+  const [sealUploading, setSealUploading] = useState(false);
+  const uploadSeal = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSealUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('folder', 'seals');
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    setSealUploading(false);
+    if (!res.ok) { setNotice('Échec du téléversement du sceau.'); return; }
+    const b = await res.json();
+    setLodgeForm((f) => ({ ...f, sealImageUrl: b.url }));
+  };
+  const saveLodgeSettings = async (e) => {
+    e.preventDefault();
+    const res = await fetch(`/api/lodges/${me.profile.lodgeId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lodgeForm) });
+    if (!res.ok) { setNotice('Erreur.'); return; }
+    setNotice('Informations de la loge mises à jour.');
+    load();
+  };
+
+  const [inviteEditorId, setInviteEditorId] = useState(null);
+  const [inviteSubject, setInviteSubject] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
+  const openInviteEditor = (m) => {
+    setInviteEditorId(m.id);
+    setInviteSubject(`Invitation — Tenue du ${new Date(m.date).toISOString().slice(0, 10)} à ${me.profile.lodge?.name}`);
+    setInviteMessage('');
+  };
   const sendInvite = async (meetingId) => {
-    const res = await fetch('/api/send-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ meetingId }) });
+    const res = await fetch('/api/send-invite', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meetingId, subject: inviteSubject, customMessage: inviteMessage }),
+    });
     const b = await res.json().catch(() => ({}));
     if (!res.ok) { setNotice(b.error || 'Erreur.'); return; }
     setNotice(`Invitations envoyées à ${b.sentTo} visiteur(s).${b.skipped ? ` (${b.skipped} adresse(s) invalide(s) ignorée(s) — vérifiez le carnet de visiteurs.)` : ''}`);
+    setInviteEditorId(null);
   };
 
   // --- Documents ---
@@ -219,10 +271,10 @@ export default function SecretariatPage() {
       {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)' }}>
-        {['meetings', 'requests', 'members', 'documents', 'visitors'].map((t) => (
+        {['meetings', 'requests', 'members', 'documents', 'visitors', 'lodge'].map((t) => (
           <button key={t} onClick={() => setTab(t)}
             style={{ background: 'none', border: 'none', padding: '10px 6px', cursor: 'pointer', fontWeight: 600, borderBottom: tab === t ? '2px solid var(--ink)' : '2px solid transparent' }}>
-            {{ meetings: 'Tenues', requests: 'Demandes', members: 'Membres', documents: 'Documents', visitors: 'Visiteurs' }[t]}
+            {{ meetings: 'Tenues', requests: 'Demandes', members: 'Membres', documents: 'Documents', visitors: 'Visiteurs', lodge: 'Ma loge' }[t]}
           </button>
         ))}
       </div>
@@ -250,19 +302,37 @@ export default function SecretariatPage() {
 
             <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Points d'ouverture</div>
             {form.openingPoints.map((p, i) => (
-              <input key={i} className="fd-input" style={{ marginBottom: 6 }} value={p} onChange={(e) => updateList('openingPoints', i, e.target.value)} />
+              <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <button type="button" disabled={i === 0} onClick={() => movePoint('openingPoints', i, -1)} style={{ background: 'none', border: 'none', cursor: i === 0 ? 'default' : 'pointer', opacity: i === 0 ? 0.3 : 1, lineHeight: '10px', fontSize: 11 }}>▲</button>
+                  <button type="button" disabled={i === form.openingPoints.length - 1} onClick={() => movePoint('openingPoints', i, 1)} style={{ background: 'none', border: 'none', cursor: i === form.openingPoints.length - 1 ? 'default' : 'pointer', opacity: i === form.openingPoints.length - 1 ? 0.3 : 1, lineHeight: '10px', fontSize: 11 }}>▼</button>
+                </div>
+                <input className="fd-input" value={p} onChange={(e) => updateList('openingPoints', i, e.target.value)} />
+              </div>
             ))}
             <button type="button" onClick={() => addToList('openingPoints')} style={{ background: 'none', border: 'none', fontSize: 12.5, cursor: 'pointer', marginBottom: 12 }}>+ Ajouter</button>
 
             <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Planches / sujets</div>
             {form.planches.map((p, i) => (
-              <input key={i} className="fd-input" style={{ marginBottom: 6 }} placeholder={`Sujet ${i + 1}`} value={p} onChange={(e) => updateList('planches', i, e.target.value)} />
+              <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <button type="button" disabled={i === 0} onClick={() => movePoint('planches', i, -1)} style={{ background: 'none', border: 'none', cursor: i === 0 ? 'default' : 'pointer', opacity: i === 0 ? 0.3 : 1, lineHeight: '10px', fontSize: 11 }}>▲</button>
+                  <button type="button" disabled={i === form.planches.length - 1} onClick={() => movePoint('planches', i, 1)} style={{ background: 'none', border: 'none', cursor: i === form.planches.length - 1 ? 'default' : 'pointer', opacity: i === form.planches.length - 1 ? 0.3 : 1, lineHeight: '10px', fontSize: 11 }}>▼</button>
+                </div>
+                <input className="fd-input" placeholder={`Sujet ${i + 1}`} value={p} onChange={(e) => updateList('planches', i, e.target.value)} />
+              </div>
             ))}
             <button type="button" onClick={() => addToList('planches')} style={{ background: 'none', border: 'none', fontSize: 12.5, cursor: 'pointer', marginBottom: 12 }}>+ Ajouter</button>
 
             <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Points de fermeture</div>
             {form.closingPoints.map((p, i) => (
-              <input key={i} className="fd-input" style={{ marginBottom: 6 }} value={p} onChange={(e) => updateList('closingPoints', i, e.target.value)} />
+              <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <button type="button" disabled={i === 0} onClick={() => movePoint('closingPoints', i, -1)} style={{ background: 'none', border: 'none', cursor: i === 0 ? 'default' : 'pointer', opacity: i === 0 ? 0.3 : 1, lineHeight: '10px', fontSize: 11 }}>▲</button>
+                  <button type="button" disabled={i === form.closingPoints.length - 1} onClick={() => movePoint('closingPoints', i, 1)} style={{ background: 'none', border: 'none', cursor: i === form.closingPoints.length - 1 ? 'default' : 'pointer', opacity: i === form.closingPoints.length - 1 ? 0.3 : 1, lineHeight: '10px', fontSize: 11 }}>▼</button>
+                </div>
+                <input className="fd-input" value={p} onChange={(e) => updateList('closingPoints', i, e.target.value)} />
+              </div>
             ))}
             <button type="button" onClick={() => addToList('closingPoints')} style={{ background: 'none', border: 'none', fontSize: 12.5, cursor: 'pointer', marginBottom: 16 }}>+ Ajouter</button>
 
@@ -277,12 +347,24 @@ export default function SecretariatPage() {
               <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
               <div style={{ fontSize: 12, color: 'var(--slate)' }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time}</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-                <button className="fd-button" onClick={() => sendInvite(m.id)}>Envoyer les invitations aux visiteurs</button>
+                <button className="fd-button" onClick={() => openInviteEditor(m)}>Envoyer les invitations aux visiteurs</button>
                 <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => copyConvocationLink(m)}>Copier le lien de convocation</button>
                 <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => startEditMeeting(m)}>Modifier</button>
                 <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => duplicateMeeting(m)}>Dupliquer</button>
                 <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => deleteMeeting(m)}>Supprimer</button>
               </div>
+              {inviteEditorId === m.id && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>Objet</div>
+                  <input className="fd-input" style={{ marginBottom: 8 }} value={inviteSubject} onChange={(e) => setInviteSubject(e.target.value)} />
+                  <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>Message personnel (facultatif, ajouté en tête de l'invitation)</div>
+                  <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 80 }} placeholder="Ex. Nous serions heureux de vous accueillir pour cette tenue exceptionnelle…" value={inviteMessage} onChange={(e) => setInviteMessage(e.target.value)} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="fd-button" onClick={() => sendInvite(m.id)}>Envoyer</button>
+                    <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setInviteEditorId(null)}>Annuler</button>
+                  </div>
+                </div>
+              )}
               <MeetingParticipants meetingId={m.id} />
             </div>
           ))}
@@ -448,6 +530,48 @@ export default function SecretariatPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === 'lodge' && lodgeForm && (
+        <div>
+          <form onSubmit={saveLodgeSettings} className="fd-card" style={{ marginBottom: 20 }}>
+            <h3 style={{ marginTop: 0 }}>Informations de la loge</h3>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Sceau de la loge</div>
+              {lodgeForm.sealImageUrl && (
+                <img src={lodgeForm.sealImageUrl} alt="Sceau de la loge" style={{ width: 90, height: 90, borderRadius: '50%', objectFit: 'cover', display: 'block', marginBottom: 8 }} />
+              )}
+              <input type="file" accept="image/*" onChange={uploadSeal} disabled={sealUploading} />
+              {sealUploading && <span style={{ fontSize: 12, color: 'var(--slate)', marginLeft: 8 }}>Envoi…</span>}
+            </div>
+
+            <select className="fd-input" style={{ marginBottom: 8 }} value={lodgeForm.riteId} onChange={(e) => setLodgeForm({ ...lodgeForm, riteId: e.target.value })}>
+              <option value="">— Rite non renseigné —</option>
+              {rites.map((r) => <option key={r.id} value={r.id}>{r.name}{r.abbreviation ? ` (${r.abbreviation})` : ''}</option>)}
+            </select>
+            <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 80 }} placeholder="Description de la loge" value={lodgeForm.description} onChange={(e) => setLodgeForm({ ...lodgeForm, description: e.target.value })} />
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+              <input type="checkbox" checked={lodgeForm.pmrAccess} onChange={(e) => setLodgeForm({ ...lodgeForm, pmrAccess: e.target.checked })} />
+              Temple accessible aux personnes à mobilité réduite (PMR)
+            </label>
+            <button className="fd-button" type="submit">Enregistrer</button>
+          </form>
+
+          {lodge?.officers?.length > 0 && (
+            <div className="fd-card">
+              <h3 style={{ marginTop: 0 }}>Bureau</h3>
+              <p style={{ fontSize: 12, color: 'var(--slate)', marginBottom: 12 }}>
+                La modification des comptes du bureau (mots de passe compris) se fait depuis l'espace Administration.
+              </p>
+              {lodge.officers.map((o) => (
+                <div key={o.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
+                  <strong>{o.role === 'president' ? 'Président.e' : o.role === 'secretary' ? 'Secrétaire' : 'Trésorier.ère'}</strong> — {o.name} ({o.email})
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
       </div>

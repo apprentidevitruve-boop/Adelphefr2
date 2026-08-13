@@ -18,6 +18,7 @@ export default function AdminPage() {
   const [lodges, setLodges] = useState([]);
   const [users, setUsers] = useState([]);
   const [obediences, setObediences] = useState([]);
+  const [rites, setRites] = useState([]);
   const [notice, setNotice] = useState('');
 
   const load = async () => {
@@ -26,10 +27,11 @@ export default function AdminPage() {
     const meBody = await meRes.json();
     if (meBody.profile.role !== 'admin') { router.push('/dashboard'); return; }
     setMe(meBody);
-    const [lodgesRes, usersRes, obediencesRes] = await Promise.all([fetch('/api/lodges'), fetch('/api/users'), fetch('/api/obediences')]);
+    const [lodgesRes, usersRes, obediencesRes, ritesRes] = await Promise.all([fetch('/api/lodges'), fetch('/api/users'), fetch('/api/obediences'), fetch('/api/rites')]);
     setLodges((await lodgesRes.json()).lodges || []);
     setUsers((await usersRes.json()).users || []);
     setObediences((await obediencesRes.json()).obediences || []);
+    setRites((await ritesRes.json()).rites || []);
   };
   useEffect(() => { load(); }, []);
 
@@ -63,14 +65,49 @@ export default function AdminPage() {
     load();
   };
 
+  // --- Rites ---
+  const [riteForm, setRiteForm] = useState({ name: '', abbreviation: '' });
+  const createRite = async (e) => {
+    e.preventDefault();
+    const res = await fetch('/api/rites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(riteForm) });
+    const b = await res.json().catch(() => ({}));
+    if (!res.ok) { setNotice(b.error || 'Erreur.'); return; }
+    setNotice('Rite ajouté.');
+    setRiteForm({ name: '', abbreviation: '' });
+    load();
+  };
+  const deleteRite = async (r) => {
+    if (!window.confirm(`Supprimer le rite "${r.name}" ?`)) return;
+    const res = await fetch(`/api/rites/${r.id}`, { method: 'DELETE' });
+    const b = await res.json().catch(() => ({}));
+    if (!res.ok) { setNotice(b.error || 'Erreur.'); return; }
+    setNotice('Rite supprimé.');
+    load();
+  };
+
   // --- Nouvelle loge ---
   const blankOfficers = () => OFFICER_ROLES.map((r) => ({ role: r.key, name: '', email: '', password: '' }));
-  const blankLodge = { name: '', lodgeNumber: '', rite: '', obedienceId: '', city: '', meetingLocation: '', description: '', pmrAccess: false, officers: blankOfficers() };
+  const blankLodge = { name: '', lodgeNumber: '', riteId: '', obedienceId: '', city: '', meetingLocation: '', description: '', pmrAccess: false, sealImageUrl: '', officers: blankOfficers() };
   const [lodgeForm, setLodgeForm] = useState(blankLodge);
   const [showLodgeForm, setShowLodgeForm] = useState(false);
 
   const setOfficerField = (role, field, value) => {
     setLodgeForm((f) => ({ ...f, officers: f.officers.map((o) => o.role === role ? { ...o, [field]: value } : o) }));
+  };
+
+  const [sealUploading, setSealUploading] = useState(false);
+  const uploadSeal = async (e, setter) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSealUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('folder', 'seals');
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    setSealUploading(false);
+    if (!res.ok) { setNotice('Échec du téléversement du sceau.'); return; }
+    const b = await res.json();
+    setter((f) => ({ ...f, sealImageUrl: b.url }));
   };
 
   const createLodge = async (e) => {
@@ -95,9 +132,9 @@ export default function AdminPage() {
       return found ? { role: r.key, name: found.name, email: found.email, password: '' } : { role: r.key, name: '', email: '', password: '' };
     });
     setEditLodgeForm({
-      name: l.name, lodgeNumber: l.lodgeNumber || '', rite: l.rite || '', obedienceId: l.obedienceId,
+      name: l.name, lodgeNumber: l.lodgeNumber || '', riteId: l.riteId || '', obedienceId: l.obedienceId,
       city: l.city, meetingLocation: l.meetingLocation, description: l.description || '',
-      pmrAccess: !!l.pmrAccess, officers,
+      pmrAccess: !!l.pmrAccess, sealImageUrl: l.sealImageUrl || '', officers,
     });
     setShowLodgeForm(false);
   };
@@ -165,10 +202,10 @@ export default function AdminPage() {
       {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)' }}>
-        {['lodges', 'users', 'obediences'].map((t) => (
+        {['lodges', 'users', 'obediences', 'rites'].map((t) => (
           <button key={t} onClick={() => setTab(t)}
             style={{ background: 'none', border: 'none', padding: '10px 6px', cursor: 'pointer', fontWeight: 600, borderBottom: tab === t ? '2px solid var(--ink)' : '2px solid transparent' }}>
-            {{ lodges: 'Loges', users: 'Utilisateurs', obediences: 'Obédiences' }[t]}
+            {{ lodges: 'Loges', users: 'Utilisateurs', obediences: 'Obédiences', rites: 'Rites' }[t]}
           </button>
         ))}
       </div>
@@ -181,7 +218,10 @@ export default function AdminPage() {
               <h3 style={{ marginTop: 0 }}>Nouvelle loge</h3>
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Nom de la loge" required value={lodgeForm.name} onChange={(e) => setLodgeForm({ ...lodgeForm, name: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Numéro de loge" value={lodgeForm.lodgeNumber} onChange={(e) => setLodgeForm({ ...lodgeForm, lodgeNumber: e.target.value })} />
-              <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Rite" value={lodgeForm.rite} onChange={(e) => setLodgeForm({ ...lodgeForm, rite: e.target.value })} />
+              <select className="fd-input" style={{ marginBottom: 8 }} value={lodgeForm.riteId} onChange={(e) => setLodgeForm({ ...lodgeForm, riteId: e.target.value })}>
+                <option value="">— Rite non renseigné —</option>
+                {rites.map((r) => <option key={r.id} value={r.id}>{r.name}{r.abbreviation ? ` (${r.abbreviation})` : ''}</option>)}
+              </select>
               <select className="fd-input" style={{ marginBottom: 8 }} required value={lodgeForm.obedienceId} onChange={(e) => setLodgeForm({ ...lodgeForm, obedienceId: e.target.value })}>
                 <option value="">— Sélectionner une obédience —</option>
                 {obediences.map((o) => <option key={o.id} value={o.id}>{o.name}{o.abbreviation ? ` (${o.abbreviation})` : ''}</option>)}
@@ -192,6 +232,12 @@ export default function AdminPage() {
                 <input type="checkbox" checked={lodgeForm.pmrAccess} onChange={(e) => setLodgeForm({ ...lodgeForm, pmrAccess: e.target.checked })} />
                 Temple accessible PMR
               </label>
+
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Sceau de la loge (facultatif)</div>
+                {lodgeForm.sealImageUrl && <img src={lodgeForm.sealImageUrl} alt="Sceau" style={{ width: 70, height: 70, borderRadius: '50%', objectFit: 'cover', display: 'block', marginBottom: 8 }} />}
+                <input type="file" accept="image/*" onChange={(e) => uploadSeal(e, setLodgeForm)} disabled={sealUploading} />
+              </div>
 
               <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 8 }}>Bureau (jusqu'à 3 personnes)</div>
               {lodgeForm.officers.map((o) => (
@@ -211,7 +257,10 @@ export default function AdminPage() {
               <h3 style={{ marginTop: 0 }}>Modifier la loge</h3>
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Nom de la loge" required value={editLodgeForm.name} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, name: e.target.value })} />
               <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Numéro de loge" value={editLodgeForm.lodgeNumber} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, lodgeNumber: e.target.value })} />
-              <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Rite" value={editLodgeForm.rite} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, rite: e.target.value })} />
+              <select className="fd-input" style={{ marginBottom: 8 }} value={editLodgeForm.riteId} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, riteId: e.target.value })}>
+                <option value="">— Rite non renseigné —</option>
+                {rites.map((r) => <option key={r.id} value={r.id}>{r.name}{r.abbreviation ? ` (${r.abbreviation})` : ''}</option>)}
+              </select>
               <select className="fd-input" style={{ marginBottom: 8 }} required value={editLodgeForm.obedienceId} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, obedienceId: e.target.value })}>
                 <option value="">— Sélectionner une obédience —</option>
                 {obediences.map((o) => <option key={o.id} value={o.id}>{o.name}{o.abbreviation ? ` (${o.abbreviation})` : ''}</option>)}
@@ -223,6 +272,12 @@ export default function AdminPage() {
                 <input type="checkbox" checked={editLodgeForm.pmrAccess} onChange={(e) => setEditLodgeForm({ ...editLodgeForm, pmrAccess: e.target.checked })} />
                 Temple accessible PMR
               </label>
+
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Sceau de la loge</div>
+                {editLodgeForm.sealImageUrl && <img src={editLodgeForm.sealImageUrl} alt="Sceau" style={{ width: 70, height: 70, borderRadius: '50%', objectFit: 'cover', display: 'block', marginBottom: 8 }} />}
+                <input type="file" accept="image/*" onChange={(e) => uploadSeal(e, setEditLodgeForm)} disabled={sealUploading} />
+              </div>
 
               <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 8 }}>Bureau (laisser le mot de passe vide pour ne pas le modifier)</div>
               {editLodgeForm.officers.map((o) => (
@@ -246,7 +301,7 @@ export default function AdminPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <div style={{ fontWeight: 600 }}>{l.name} {l.lodgeNumber && `n°${l.lodgeNumber}`}</div>
-                  <div style={{ fontSize: 12, color: 'var(--slate)' }}>{l.obedience?.name} · {l.city}</div>
+                  <div style={{ fontSize: 12, color: 'var(--slate)' }}>{l.obedience?.name}{l.rite ? ` · ${l.rite.name}` : ''} · {l.city}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => startEditLodge(l)}>Modifier</button>
@@ -347,6 +402,23 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'rites' && (
+        <div>
+          <form onSubmit={createRite} className="fd-card" style={{ marginBottom: 20 }}>
+            <h3 style={{ marginTop: 0 }}>Nouveau rite</h3>
+            <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Nom complet" required value={riteForm.name} onChange={(e) => setRiteForm({ ...riteForm, name: e.target.value })} />
+            <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Sigle (facultatif)" value={riteForm.abbreviation} onChange={(e) => setRiteForm({ ...riteForm, abbreviation: e.target.value })} />
+            <button className="fd-button" type="submit">Ajouter</button>
+          </form>
+          {rites.map((r) => (
+            <div key={r.id} className="fd-card" style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 600 }}>{r.name} {r.abbreviation && <span style={{ fontWeight: 400, color: 'var(--slate)', fontSize: 12 }}>({r.abbreviation})</span>}</div>
+              <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => deleteRite(r)}>Supprimer</button>
             </div>
           ))}
         </div>
