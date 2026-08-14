@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DEGREES, MEETING_TYPES, DOC_LEVELS, degreeLabel, roleLabel } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
+import DocumentPickerModal from '../../components/DocumentPickerModal';
 
 export default function SecretariatPage() {
   const router = useRouter();
@@ -22,6 +23,19 @@ export default function SecretariatPage() {
   const [pastDegreeFilter, setPastDegreeFilter] = useState('all');
   const [pastDateFilter, setPastDateFilter] = useState('');
   const [pastSearch, setPastSearch] = useState('');
+  const [showDocPicker, setShowDocPicker] = useState(false);
+
+  // L'onglet actif est reflété dans l'URL (?tab=...) pour que le
+  // bouton "Retour" d'une page de tenue vous ramène bien sur le bon
+  // onglet (ex. "Tenues passées"), et pas sur l'onglet par défaut.
+  useEffect(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    if (urlTab) setTab(urlTab);
+  }, []);
+  const changeTab = (t) => {
+    setTab(t);
+    router.replace(`/secretariat?tab=${t}`);
+  };
 
   const load = async () => {
     const meRes = await fetch('/api/me');
@@ -303,7 +317,7 @@ export default function SecretariatPage() {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)' }}>
         {['meetings', 'past', 'requests', 'members', 'documents', 'visitors', 'lodge'].map((t) => (
-          <button key={t} onClick={() => setTab(t)}
+          <button key={t} onClick={() => changeTab(t)}
             style={{ background: 'none', border: 'none', padding: '10px 6px', cursor: 'pointer', fontWeight: 600, borderBottom: tab === t ? '2px solid var(--ink)' : '2px solid transparent' }}>
             {{ meetings: 'Tenues', past: 'Tenues passées', requests: 'Demandes', members: 'Membres', documents: 'Documents', visitors: 'Visiteurs', lodge: 'Ma loge' }[t]}
             {t === 'requests' && requests.filter((r) => r.status === 'pending').length > 0 && (
@@ -376,33 +390,29 @@ export default function SecretariatPage() {
             <button type="button" onClick={() => addToList('closingPoints')} style={{ background: 'none', border: 'none', fontSize: 12.5, cursor: 'pointer', marginBottom: 16 }}>+ Ajouter</button>
 
             <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Documents à lier (facultatif)</div>
-            {documents.length === 0 ? (
-              <p style={{ fontSize: 12.5, color: 'var(--slate)', marginBottom: 16 }}>Aucun document dans l'espace documentaire pour l'instant.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, maxHeight: 240, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8, padding: 10 }}>
-                {[...folders, { id: '', name: 'Sans dossier' }].map((f) => {
-                  const docsInFolder = documents.filter((d) => (d.folderId || '') === f.id);
-                  if (docsInFolder.length === 0) return null;
-                  return (
-                    <div key={f.id || 'none'}>
-                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 4 }}>{f.name}</div>
-                      {docsInFolder.map((d) => (
-                        <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', marginBottom: 2 }}>
-                          <input
-                            type="checkbox"
-                            checked={form.documentIds.includes(d.id)}
-                            onChange={(e) => setForm((f2) => ({
-                              ...f2,
-                              documentIds: e.target.checked ? [...f2.documentIds, d.id] : f2.documentIds.filter((id) => id !== d.id),
-                            }))}
-                          />
-                          {d.title}
-                        </label>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
+            <div style={{ marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {form.documentIds.map((id) => {
+                const d = documents.find((doc) => doc.id === id);
+                if (!d) return null;
+                return (
+                  <span key={id} style={{ fontSize: 12, background: 'var(--stone)', borderRadius: 20, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    📄 {d.title}
+                    <button type="button" onClick={() => setForm((f) => ({ ...f, documentIds: f.documentIds.filter((docId) => docId !== id) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--rose)', fontSize: 12, padding: 0 }}>✕</button>
+                  </span>
+                );
+              })}
+            </div>
+            <button type="button" className="fd-button" style={{ background: 'var(--slate)', marginBottom: 16 }} onClick={() => setShowDocPicker(true)}>
+              Choisir des documents…
+            </button>
+            {showDocPicker && (
+              <DocumentPickerModal
+                documents={documents}
+                folders={folders}
+                selectedIds={form.documentIds}
+                onClose={() => setShowDocPicker(false)}
+                onConfirm={(ids) => { setForm((f) => ({ ...f, documentIds: ids })); setShowDocPicker(false); }}
+              />
             )}
 
             <div style={{ display: 'flex', gap: 8 }}>

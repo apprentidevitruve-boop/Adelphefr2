@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { degreeLabel } from '../../../lib/constants';
 import AppHeader from '../../../components/AppHeader';
+import DocumentPickerModal from '../../../components/DocumentPickerModal';
 
 export default function MeetingDetailPage({ params }) {
   const router = useRouter();
@@ -21,7 +22,8 @@ export default function MeetingDetailPage({ params }) {
   const [suggestMessage, setSuggestMessage] = useState('');
   const [suggestSent, setSuggestSent] = useState('');
   const [lodgeDocuments, setLodgeDocuments] = useState([]);
-  const [selectedDocId, setSelectedDocId] = useState('');
+  const [folders, setFolders] = useState([]);
+  const [showDocPicker, setShowDocPicker] = useState(false);
 
   const load = async () => {
     const meRes = await fetch('/api/me');
@@ -37,8 +39,9 @@ export default function MeetingDetailPage({ params }) {
     const isOwn = body.meeting.lodgeId === meBody.profile.lodgeId;
     const isBureauRole = ['secretary', 'president', 'treasurer'].includes(meBody.profile.role);
     if (isOwn && isBureauRole) {
-      const docsRes = await fetch('/api/documents');
+      const [docsRes, foldersRes] = await Promise.all([fetch('/api/documents'), fetch('/api/document-folders')]);
       setLodgeDocuments((await docsRes.json()).documents || []);
+      setFolders((await foldersRes.json()).folders || []);
     }
   };
   useEffect(() => { load(); }, [params.id]);
@@ -96,14 +99,14 @@ export default function MeetingDetailPage({ params }) {
   };
 
   const isBureau = ['secretary', 'president', 'treasurer'].includes(me?.profile?.role);
-  const linkDocument = async () => {
-    if (!selectedDocId) return;
-    const res = await fetch(`/api/meetings/${meeting.id}/documents`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ documentId: selectedDocId }),
-    });
-    if (!res.ok) { const b = await res.json().catch(() => ({})); setNotice(b.error || 'Erreur.'); return; }
-    setSelectedDocId('');
+  const linkDocuments = async (documentIds) => {
+    setShowDocPicker(false);
+    for (const documentId of documentIds) {
+      await fetch(`/api/meetings/${meeting.id}/documents`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId }),
+      });
+    }
     load();
   };
   const unlinkDocument = async (documentId) => {
@@ -182,28 +185,19 @@ export default function MeetingDetailPage({ params }) {
               </div>
             )}
             {isBureau && (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <select className="fd-input" style={{ flex: 1 }} value={selectedDocId} onChange={(e) => setSelectedDocId(e.target.value)}>
-                  <option value="">— Choisir un document de l'espace documentaire —</option>
-                  {(() => {
-                    const linkedIds = new Set((meeting.linkedDocuments || []).map((ld) => ld.id));
-                    const available = lodgeDocuments.filter((d) => !linkedIds.has(d.id));
-                    const folderGroups = [...new Map(available.filter((d) => d.folder).map((d) => [d.folder.id, d.folder.name])).entries()];
-                    return (
-                      <>
-                        {folderGroups.map(([folderId, folderName]) => (
-                          <optgroup key={folderId} label={folderName}>
-                            {available.filter((d) => d.folder?.id === folderId).map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
-                          </optgroup>
-                        ))}
-                        <optgroup label="Sans dossier">
-                          {available.filter((d) => !d.folder).map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
-                        </optgroup>
-                      </>
-                    );
-                  })()}
-                </select>
-                <button className="fd-button" onClick={linkDocument} disabled={!selectedDocId}>Lier</button>
+              <div>
+                <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowDocPicker(true)}>
+                  Lier un document…
+                </button>
+                {showDocPicker && (
+                  <DocumentPickerModal
+                    documents={lodgeDocuments.filter((d) => !(meeting.linkedDocuments || []).some((ld) => ld.id === d.id))}
+                    folders={folders}
+                    selectedIds={[]}
+                    onClose={() => setShowDocPicker(false)}
+                    onConfirm={linkDocuments}
+                  />
+                )}
               </div>
             )}
           </div>
