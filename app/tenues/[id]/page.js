@@ -115,7 +115,7 @@ export default function MeetingDetailPage({ params }) {
     <div>
       <AppHeader profile={me.profile} />
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '0 20px 40px' }}>
-        <Link href={isOwnLodge ? '/ma-loge' : '/calendrier'} style={{ fontSize: 13, color: 'var(--slate)' }}>← Retour</Link>
+        <button onClick={() => router.back()} style={{ fontSize: 13, color: 'var(--slate)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>← Retour</button>
 
         <div className="fd-card" style={{ marginTop: 16, marginBottom: 20 }}>
           <Link href={`/loges/${meeting.lodge.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -185,9 +185,23 @@ export default function MeetingDetailPage({ params }) {
               <div style={{ display: 'flex', gap: 8 }}>
                 <select className="fd-input" style={{ flex: 1 }} value={selectedDocId} onChange={(e) => setSelectedDocId(e.target.value)}>
                   <option value="">— Choisir un document de l'espace documentaire —</option>
-                  {lodgeDocuments
-                    .filter((d) => !(meeting.linkedDocuments || []).some((ld) => ld.id === d.id))
-                    .map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+                  {(() => {
+                    const linkedIds = new Set((meeting.linkedDocuments || []).map((ld) => ld.id));
+                    const available = lodgeDocuments.filter((d) => !linkedIds.has(d.id));
+                    const folderGroups = [...new Map(available.filter((d) => d.folder).map((d) => [d.folder.id, d.folder.name])).entries()];
+                    return (
+                      <>
+                        {folderGroups.map(([folderId, folderName]) => (
+                          <optgroup key={folderId} label={folderName}>
+                            {available.filter((d) => d.folder?.id === folderId).map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+                          </optgroup>
+                        ))}
+                        <optgroup label="Sans dossier">
+                          {available.filter((d) => !d.folder).map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+                        </optgroup>
+                      </>
+                    );
+                  })()}
                 </select>
                 <button className="fd-button" onClick={linkDocument} disabled={!selectedDocId}>Lier</button>
               </div>

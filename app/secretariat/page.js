@@ -379,20 +379,29 @@ export default function SecretariatPage() {
             {documents.length === 0 ? (
               <p style={{ fontSize: 12.5, color: 'var(--slate)', marginBottom: 16 }}>Aucun document dans l'espace documentaire pour l'instant.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16, maxHeight: 160, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8, padding: 10 }}>
-                {documents.map((d) => (
-                  <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={form.documentIds.includes(d.id)}
-                      onChange={(e) => setForm((f) => ({
-                        ...f,
-                        documentIds: e.target.checked ? [...f.documentIds, d.id] : f.documentIds.filter((id) => id !== d.id),
-                      }))}
-                    />
-                    {d.title}{d.folder ? ` · ${d.folder.name}` : ''}
-                  </label>
-                ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, maxHeight: 240, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8, padding: 10 }}>
+                {[...folders, { id: '', name: 'Sans dossier' }].map((f) => {
+                  const docsInFolder = documents.filter((d) => (d.folderId || '') === f.id);
+                  if (docsInFolder.length === 0) return null;
+                  return (
+                    <div key={f.id || 'none'}>
+                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 4 }}>{f.name}</div>
+                      {docsInFolder.map((d) => (
+                        <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', marginBottom: 2 }}>
+                          <input
+                            type="checkbox"
+                            checked={form.documentIds.includes(d.id)}
+                            onChange={(e) => setForm((f2) => ({
+                              ...f2,
+                              documentIds: e.target.checked ? [...f2.documentIds, d.id] : f2.documentIds.filter((id) => id !== d.id),
+                            }))}
+                          />
+                          {d.title}
+                        </label>
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
