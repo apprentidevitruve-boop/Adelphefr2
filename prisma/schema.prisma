@@ -176,20 +176,24 @@ model Meeting {
   closingPoints      AgendaPoint[] @relation("ClosingPoints")
   visitRequests      VisitRequest[]
   attendees          MeetingAttendee[]
-  attachments        MeetingAttachment[]
+  documentLinks      MeetingDocument[]
 }
 
-// Pièces jointes propres à une tenue (comptes-rendus, documents de
-// travail...) — visibles UNIQUEMENT depuis le site, pour les membres
-// connectés : jamais incluses dans l'e-mail d'invitation ni sur la
-// page de convocation publique.
-model MeetingAttachment {
+// Un document de l'espace documentaire de la loge peut être associé à
+// une tenue précise (ex. la planche du jour, un compte-rendu). Le
+// document lui-même reste géré depuis "Documents" (avec son niveau
+// d'accès) ; ce n'est ici qu'un lien, pas un nouveau fichier. Visible
+// UNIQUEMENT par les membres de la loge organisatrice, jamais par les
+// visiteurs d'une autre loge ni sur la convocation publique.
+model MeetingDocument {
   id         String   @id @default(uuid())
   meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   meetingId  String
-  fileUrl    String
-  fileName   String
-  uploadedAt DateTime @default(now())
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+  linkedAt   DateTime @default(now())
+
+  @@unique([meetingId, documentId])
 }
 
 // Un seul modèle pour les 3 sections de l'ordre du jour (ouverture,
@@ -249,6 +253,7 @@ model Document {
   fileUrl     String?  // objet stocké sur OVHcloud Object Storage
   fileName    String?
   addedAt     DateTime @default(now())
+  meetingLinks MeetingDocument[]
 }
 
 model Visitor {

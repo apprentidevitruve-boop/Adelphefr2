@@ -1,6 +1,6 @@
 import { prisma } from '../../../../lib/prisma';
 import { requireRole, BUREAU_ROLES, json, jsonError } from '../../../../lib/auth';
-import { degreeRank } from '../../../../lib/constants';
+import { degreeRank, canAccessDocument } from '../../../../lib/constants';
 
 async function loadOwnMeeting(profile, id) {
   const meeting = await prisma.meeting.findUnique({ where: { id } });
@@ -22,7 +22,6 @@ export async function GET(request, { params }) {
       lodge: { include: { obedience: true, rite: true, officers: true } },
       openingPoints: true, planches: true, closingPoints: true,
       attendees: { where: { profileId: profile.id } },
-      attachments: { orderBy: { uploadedAt: 'desc' } },
     },
   });
   if (!meeting) return jsonError('Tenue introuvable.', 404);
@@ -30,12 +29,29 @@ export async function GET(request, { params }) {
     return jsonError("Cette tenue n'est pas accessible à votre grade.", 403);
   }
 
+  const isOwnLodge = meeting.lodgeId === profile.lodgeId;
+
+  // Les documents liés ne sont même pas envoyés au navigateur si la
+  // personne n'est pas membre de la loge organisatrice — pas juste
+  // masqués côté affichage, réellement absents de la réponse.
+  let linkedDocuments = [];
+  if (isOwnLodge) {
+    const links = await prisma.meetingDocument.findMany({
+      where: { meetingId: params.id },
+      include: { document: true },
+      orderBy: { linkedAt: 'desc' },
+    });
+    linkedDocuments = links
+      .filter((l) => canAccessDocument(l.document, profile))
+      .map((l) => ({ linkId: l.id, ...l.document }));
+  }
+
   let myVisitRequest = null;
-  if (meeting.lodgeId !== profile.lodgeId) {
+  if (!isOwnLodge) {
     myVisitRequest = await prisma.visitRequest.findFirst({ where: { meetingId: params.id, profileId: profile.id } });
   }
 
-  return json({ meeting, myVisitRequest });
+  return json({ meeting: { ...meeting, linkedDocuments }, myVisitRequest });
 }
 
 export async function PATCH(request, { params }) {

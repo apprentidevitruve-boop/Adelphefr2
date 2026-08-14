@@ -11,7 +11,7 @@ export async function GET() {
   const today = new Date(new Date().toDateString());
   const meetings = await prisma.meeting.findMany({
     where: { lodgeId: auth.profile.lodgeId, date: { lt: today } },
-    include: { openingPoints: true, planches: true, closingPoints: true, attachments: { orderBy: { uploadedAt: 'desc' } } },
+    include: { openingPoints: true, planches: true, closingPoints: true, documentLinks: true },
     orderBy: { date: 'desc' },
   });
   return json({ meetings });

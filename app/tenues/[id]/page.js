@@ -20,18 +20,26 @@ export default function MeetingDetailPage({ params }) {
   const [suggestEmail, setSuggestEmail] = useState('');
   const [suggestMessage, setSuggestMessage] = useState('');
   const [suggestSent, setSuggestSent] = useState('');
-  const [attachUploading, setAttachUploading] = useState(false);
-  const [attachInputKey, setAttachInputKey] = useState(0);
+  const [lodgeDocuments, setLodgeDocuments] = useState([]);
+  const [selectedDocId, setSelectedDocId] = useState('');
 
   const load = async () => {
     const meRes = await fetch('/api/me');
     if (!meRes.ok) { router.push('/login'); return; }
-    setMe(await meRes.json());
+    const meBody = await meRes.json();
+    setMe(meBody);
     const res = await fetch(`/api/meetings/${params.id}`);
     if (!res.ok) { setNotFound(true); return; }
     const body = await res.json();
     setMeeting(body.meeting);
     setMyVisitRequest(body.myVisitRequest);
+
+    const isOwn = body.meeting.lodgeId === meBody.profile.lodgeId;
+    const isBureauRole = ['secretary', 'president', 'treasurer'].includes(meBody.profile.role);
+    if (isOwn && isBureauRole) {
+      const docsRes = await fetch('/api/documents');
+      setLodgeDocuments((await docsRes.json()).documents || []);
+    }
   };
   useEffect(() => { load(); }, [params.id]);
 
@@ -88,27 +96,18 @@ export default function MeetingDetailPage({ params }) {
   };
 
   const isBureau = ['secretary', 'president', 'treasurer'].includes(me?.profile?.role);
-  const uploadAttachment = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAttachUploading(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('folder', 'meeting-attachments');
-    const uploadRes = await fetch('/api/upload', { method: 'POST', body: fd });
-    if (!uploadRes.ok) { setAttachUploading(false); setNotice('Échec du téléversement.'); return; }
-    const uploaded = await uploadRes.json();
-    await fetch(`/api/meetings/${meeting.id}/attachments`, {
+  const linkDocument = async () => {
+    if (!selectedDocId) return;
+    const res = await fetch(`/api/meetings/${meeting.id}/documents`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileUrl: uploaded.url, fileName: uploaded.name }),
+      body: JSON.stringify({ documentId: selectedDocId }),
     });
-    setAttachUploading(false);
-    setAttachInputKey((k) => k + 1);
+    if (!res.ok) { const b = await res.json().catch(() => ({})); setNotice(b.error || 'Erreur.'); return; }
+    setSelectedDocId('');
     load();
   };
-  const deleteAttachment = async (attachmentId) => {
-    if (!window.confirm('Supprimer cette pièce jointe ?')) return;
-    await fetch(`/api/meetings/${meeting.id}/attachments/${attachmentId}`, { method: 'DELETE' });
+  const unlinkDocument = async (documentId) => {
+    await fetch(`/api/meetings/${meeting.id}/documents/${documentId}`, { method: 'DELETE' });
     load();
   };
 
@@ -164,30 +163,37 @@ export default function MeetingDetailPage({ params }) {
 
         {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
 
-        <div className="fd-card" style={{ marginBottom: 20 }}>
-          <h3 style={{ marginTop: 0 }}>Documents de la tenue</h3>
-          <p style={{ fontSize: 11.5, color: 'var(--slate-light)', marginTop: -8, marginBottom: 12 }}>
-            Visibles uniquement depuis le site — jamais inclus dans l'invitation par e-mail ni sur la convocation publique.
-          </p>
-          {(meeting.attachments || []).length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--slate)' }}>Aucun document pour cette tenue.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: isBureau ? 12 : 0 }}>
-              {meeting.attachments.map((a) => (
-                <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <a href={a.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--ink)' }}>📎 {a.fileName}</a>
-                  {isBureau && <button onClick={() => deleteAttachment(a.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 12 }}>Supprimer</button>}
-                </div>
-              ))}
-            </div>
-          )}
-          {isBureau && (
-            <div>
-              <input key={attachInputKey} type="file" onChange={uploadAttachment} disabled={attachUploading} />
-              {attachUploading && <span style={{ fontSize: 12, color: 'var(--slate)', marginLeft: 8 }}>Envoi…</span>}
-            </div>
-          )}
-        </div>
+        {isOwnLodge && (
+          <div className="fd-card" style={{ marginBottom: 20 }}>
+            <h3 style={{ marginTop: 0 }}>Documents de la tenue</h3>
+            <p style={{ fontSize: 11.5, color: 'var(--slate-light)', marginTop: -8, marginBottom: 12 }}>
+              Visibles uniquement par les membres de {meeting.lodge.name} — jamais inclus dans l'invitation par e-mail ni sur la convocation publique.
+            </p>
+            {(meeting.linkedDocuments || []).length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--slate)' }}>Aucun document lié à cette tenue.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: isBureau ? 12 : 0 }}>
+                {meeting.linkedDocuments.map((d) => (
+                  <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <a href={d.fileUrl || d.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--ink)' }}>📎 {d.title}</a>
+                    {isBureau && <button onClick={() => unlinkDocument(d.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 12 }}>Délier</button>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {isBureau && (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <select className="fd-input" style={{ flex: 1 }} value={selectedDocId} onChange={(e) => setSelectedDocId(e.target.value)}>
+                  <option value="">— Choisir un document de l'espace documentaire —</option>
+                  {lodgeDocuments
+                    .filter((d) => !(meeting.linkedDocuments || []).some((ld) => ld.id === d.id))
+                    .map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+                </select>
+                <button className="fd-button" onClick={linkDocument} disabled={!selectedDocId}>Lier</button>
+              </div>
+            )}
+          </div>
+        )}
 
         {isOwnLodge ? (
           <div className="fd-card">

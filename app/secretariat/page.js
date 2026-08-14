@@ -414,7 +414,7 @@ export default function SecretariatPage() {
                       <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
                       <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>
                         {new Date(m.date).toLocaleDateString('fr-FR')} · {degreeLabel(m.minDegree)}
-                        {m.attachments?.length > 0 && ` · 📎 ${m.attachments.length} document(s)`}
+                        {m.documentLinks?.length > 0 && ` · 📎 ${m.documentLinks.length} document(s) lié(s)`}
                       </div>
                     </div>
                   </Link>
