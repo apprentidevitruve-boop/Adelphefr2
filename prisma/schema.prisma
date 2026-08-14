@@ -176,6 +176,20 @@ model Meeting {
   closingPoints      AgendaPoint[] @relation("ClosingPoints")
   visitRequests      VisitRequest[]
   attendees          MeetingAttendee[]
+  attachments        MeetingAttachment[]
+}
+
+// Pièces jointes propres à une tenue (comptes-rendus, documents de
+// travail...) — visibles UNIQUEMENT depuis le site, pour les membres
+// connectés : jamais incluses dans l'e-mail d'invitation ni sur la
+// page de convocation publique.
+model MeetingAttachment {
+  id         String   @id @default(uuid())
+  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId  String
+  fileUrl    String
+  fileName   String
+  uploadedAt DateTime @default(now())
 }
 
 // Un seul modèle pour les 3 sections de l'ordre du jour (ouverture,

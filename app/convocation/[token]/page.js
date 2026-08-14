@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DEGREES } from '../../../lib/constants';
+import { DEGREES, truncateName } from '../../../lib/constants';
 
 export default function ConvocationPage({ params }) {
   const [meeting, setMeeting] = useState(null);
@@ -76,7 +76,7 @@ export default function ConvocationPage({ params }) {
           <div style={{ fontSize: 12.5, color: 'var(--slate)', borderTop: '1px solid var(--line)', paddingTop: 12, marginTop: 12 }}>
             {meeting.lodge.officers.map((o) => (
               <div key={o.id}>
-                {{ president: 'Président.e', secretary: 'Secrétaire', treasurer: 'Trésorier.ère' }[o.role]} : {o.name}{o.email ? ` — ${o.email}` : ''}
+                {{ president: 'Président.e', secretary: 'Secrétaire', treasurer: 'Trésorier.ère' }[o.role]} : {truncateName(o.name)}{o.email ? ` — ${o.email}` : ''}
               </div>
             ))}
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { DEGREES, MEETING_TYPES, DOC_LEVELS, degreeLabel, roleLabel } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 
@@ -10,6 +11,7 @@ export default function SecretariatPage() {
   const [me, setMe] = useState(null);
   const [tab, setTab] = useState('meetings');
   const [meetings, setMeetings] = useState([]);
+  const [pastMeetings, setPastMeetings] = useState([]);
   const [members, setMembers] = useState([]);
   const [requests, setRequests] = useState([]);
   const [documents, setDocuments] = useState([]);
@@ -17,16 +19,20 @@ export default function SecretariatPage() {
   const [lodge, setLodge] = useState(null);
   const [rites, setRites] = useState([]);
   const [notice, setNotice] = useState('');
+  const [pastDegreeFilter, setPastDegreeFilter] = useState('all');
+  const [pastDateFilter, setPastDateFilter] = useState('');
+  const [pastSearch, setPastSearch] = useState('');
 
   const load = async () => {
     const meRes = await fetch('/api/me');
     if (!meRes.ok) { router.push('/login'); return; }
     const meBody = await meRes.json();
     setMe(meBody);
-    const [meetingsRes, membersRes, requestsRes, documentsRes, visitorsRes, lodgesRes, ritesRes] = await Promise.all([
-      fetch('/api/meetings'), fetch('/api/members'), fetch('/api/visit-requests'), fetch('/api/documents'), fetch('/api/visitors'), fetch('/api/lodges'), fetch('/api/rites'),
+    const [meetingsRes, membersRes, requestsRes, documentsRes, visitorsRes, lodgesRes, ritesRes, pastRes] = await Promise.all([
+      fetch('/api/meetings'), fetch('/api/members'), fetch('/api/visit-requests'), fetch('/api/documents'), fetch('/api/visitors'), fetch('/api/lodges'), fetch('/api/rites'), fetch('/api/meetings/past'),
     ]);
     setMeetings((await meetingsRes.json()).meetings || []);
+    setPastMeetings((await pastRes.json()).meetings || []);
     setMembers((await membersRes.json()).members || []);
     setRequests((await requestsRes.json()).visitRequests || []);
     setDocuments((await documentsRes.json()).documents || []);
@@ -272,10 +278,10 @@ export default function SecretariatPage() {
       {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)' }}>
-        {['meetings', 'requests', 'members', 'documents', 'visitors', 'lodge'].map((t) => (
+        {['meetings', 'past', 'requests', 'members', 'documents', 'visitors', 'lodge'].map((t) => (
           <button key={t} onClick={() => setTab(t)}
             style={{ background: 'none', border: 'none', padding: '10px 6px', cursor: 'pointer', fontWeight: 600, borderBottom: tab === t ? '2px solid var(--ink)' : '2px solid transparent' }}>
-            {{ meetings: 'Tenues', requests: 'Demandes', members: 'Membres', documents: 'Documents', visitors: 'Visiteurs', lodge: 'Ma loge' }[t]}
+            {{ meetings: 'Tenues', past: 'Tenues passées', requests: 'Demandes', members: 'Membres', documents: 'Documents', visitors: 'Visiteurs', lodge: 'Ma loge' }[t]}
             {t === 'requests' && requests.filter((r) => r.status === 'pending').length > 0 && (
               <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: '#fff', background: 'var(--rose)', borderRadius: 20, padding: '1px 7px' }}>
                 {requests.filter((r) => r.status === 'pending').length}
@@ -377,6 +383,45 @@ export default function SecretariatPage() {
               <MeetingParticipants meetingId={m.id} />
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === 'past' && (
+        <div>
+          <div className="fd-card" style={{ marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <select className="fd-input" style={{ width: 180 }} value={pastDegreeFilter} onChange={(e) => setPastDegreeFilter(e.target.value)}>
+              <option value="all">Tous les grades</option>
+              {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+            </select>
+            <input className="fd-input" type="date" style={{ width: 170 }} value={pastDateFilter} onChange={(e) => setPastDateFilter(e.target.value)} />
+            <input className="fd-input" style={{ flex: '1 1 200px' }} placeholder="Rechercher (sujet, planche…)" value={pastSearch} onChange={(e) => setPastSearch(e.target.value)} />
+          </div>
+
+          {(() => {
+            const q = pastSearch.trim().toLowerCase();
+            const filteredPast = pastMeetings
+              .filter((m) => pastDegreeFilter === 'all' || m.minDegree === pastDegreeFilter)
+              .filter((m) => !pastDateFilter || new Date(m.date).toISOString().slice(0, 10) === pastDateFilter)
+              .filter((m) => !q || [...m.openingPoints, ...m.planches, ...m.closingPoints].some((p) => p.title.toLowerCase().includes(q)));
+
+            return filteredPast.length === 0 ? (
+              <p style={{ color: 'var(--slate)' }}>Aucune tenue passée ne correspond à ces filtres.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {filteredPast.map((m) => (
+                  <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <div className="fd-card" style={{ cursor: 'pointer' }}>
+                      <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
+                      <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>
+                        {new Date(m.date).toLocaleDateString('fr-FR')} · {degreeLabel(m.minDegree)}
+                        {m.attachments?.length > 0 && ` · 📎 ${m.attachments.length} document(s)`}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 

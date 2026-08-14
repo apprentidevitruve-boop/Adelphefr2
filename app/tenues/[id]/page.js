@@ -85,6 +85,33 @@ export default function MeetingDetailPage({ params }) {
     setSuggestMessage('');
   };
 
+  const isBureau = ['secretary', 'president', 'treasurer'].includes(me?.profile?.role);
+  const [attachUploading, setAttachUploading] = useState(false);
+  const [attachInputKey, setAttachInputKey] = useState(0);
+  const uploadAttachment = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAttachUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('folder', 'meeting-attachments');
+    const uploadRes = await fetch('/api/upload', { method: 'POST', body: fd });
+    if (!uploadRes.ok) { setAttachUploading(false); setNotice('Échec du téléversement.'); return; }
+    const uploaded = await uploadRes.json();
+    await fetch(`/api/meetings/${meeting.id}/attachments`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileUrl: uploaded.url, fileName: uploaded.name }),
+    });
+    setAttachUploading(false);
+    setAttachInputKey((k) => k + 1);
+    load();
+  };
+  const deleteAttachment = async (attachmentId) => {
+    if (!window.confirm('Supprimer cette pièce jointe ?')) return;
+    await fetch(`/api/meetings/${meeting.id}/attachments/${attachmentId}`, { method: 'DELETE' });
+    load();
+  };
+
   return (
     <div>
       <AppHeader profile={me.profile} />
@@ -136,6 +163,31 @@ export default function MeetingDetailPage({ params }) {
         </div>
 
         {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
+
+        <div className="fd-card" style={{ marginBottom: 20 }}>
+          <h3 style={{ marginTop: 0 }}>Documents de la tenue</h3>
+          <p style={{ fontSize: 11.5, color: 'var(--slate-light)', marginTop: -8, marginBottom: 12 }}>
+            Visibles uniquement depuis le site — jamais inclus dans l'invitation par e-mail ni sur la convocation publique.
+          </p>
+          {(meeting.attachments || []).length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--slate)' }}>Aucun document pour cette tenue.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: isBureau ? 12 : 0 }}>
+              {meeting.attachments.map((a) => (
+                <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <a href={a.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--ink)' }}>📎 {a.fileName}</a>
+                  {isBureau && <button onClick={() => deleteAttachment(a.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 12 }}>Supprimer</button>}
+                </div>
+              ))}
+            </div>
+          )}
+          {isBureau && (
+            <div>
+              <input key={attachInputKey} type="file" onChange={uploadAttachment} disabled={attachUploading} />
+              {attachUploading && <span style={{ fontSize: 12, color: 'var(--slate)', marginLeft: 8 }}>Envoi…</span>}
+            </div>
+          )}
+        </div>
 
         {isOwnLodge ? (
           <div className="fd-card">

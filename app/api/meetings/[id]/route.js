@@ -22,6 +22,7 @@ export async function GET(request, { params }) {
       lodge: { include: { obedience: true, rite: true, officers: true } },
       openingPoints: true, planches: true, closingPoints: true,
       attendees: { where: { profileId: profile.id } },
+      attachments: { orderBy: { uploadedAt: 'desc' } },
     },
   });
   if (!meeting) return jsonError('Tenue introuvable.', 404);
