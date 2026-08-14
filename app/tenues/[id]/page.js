@@ -20,6 +20,8 @@ export default function MeetingDetailPage({ params }) {
   const [suggestEmail, setSuggestEmail] = useState('');
   const [suggestMessage, setSuggestMessage] = useState('');
   const [suggestSent, setSuggestSent] = useState('');
+  const [attachUploading, setAttachUploading] = useState(false);
+  const [attachInputKey, setAttachInputKey] = useState(0);
 
   const load = async () => {
     const meRes = await fetch('/api/me');
@@ -86,8 +88,6 @@ export default function MeetingDetailPage({ params }) {
   };
 
   const isBureau = ['secretary', 'president', 'treasurer'].includes(me?.profile?.role);
-  const [attachUploading, setAttachUploading] = useState(false);
-  const [attachInputKey, setAttachInputKey] = useState(0);
   const uploadAttachment = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;

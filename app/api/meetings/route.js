@@ -7,7 +7,9 @@ export async function GET() {
   if (auth.error) return auth.error;
   const { profile } = auth;
 
+  const today = new Date(new Date().toDateString());
   const meetings = await prisma.meeting.findMany({
+    where: { date: { gte: today } },
     include: {
       lodge: { include: { obedience: true, rite: true } }, openingPoints: true, planches: true, closingPoints: true,
       attendees: { where: { profileId: profile.id } },
