@@ -46,6 +46,23 @@ model Lodge {
   meetings      Meeting[]
   documents     Document[]
   visitorBook   Visitor[]
+  subscriptions Subscription[]
+}
+
+// Un membre peut s'abonner aux invitations d'une AUTRE loge que la
+// sienne (distinct du carnet de visiteurs, qui concerne des personnes
+// externes au réseau) — reçoit alors les convocations envoyées par
+// cette loge, par e-mail et/ou notification in-app selon son choix.
+model Subscription {
+  id             String   @id @default(uuid())
+  profile        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId      String
+  lodge          Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  lodgeId        String
+  notifyByEmail  Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@unique([profileId, lodgeId])
 }
 
 // Président / secrétaire / trésorier désignés pour une loge — simple
@@ -120,6 +137,7 @@ model Profile {
   notifications    Notification[]
   visitRequests    VisitRequest[]
   resetTokens      PasswordResetToken[]
+  subscriptions    Subscription[]
 }
 
 model Session {

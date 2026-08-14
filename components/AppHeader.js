@@ -31,9 +31,12 @@ export default function AppHeader({ profile }) {
         {isBureau && <Link href="/secretariat" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Secrétariat</Link>}
         {profile.role === 'admin' && <Link href="/admin" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Administration</Link>}
       </div>
-      <button onClick={logout} style={{ background: 'none', border: '1.5px solid var(--ink)', borderRadius: 6, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-        Se déconnecter
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <Link href="/profil" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Mon profil</Link>
+        <button onClick={logout} style={{ background: 'none', border: '1.5px solid var(--ink)', borderRadius: 6, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          Se déconnecter
+        </button>
+      </div>
     </div>
   );
 }

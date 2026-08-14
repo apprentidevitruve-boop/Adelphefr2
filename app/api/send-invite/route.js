@@ -13,12 +13,22 @@ export async function POST(request) {
   if (meeting.lodgeId !== profile.lodgeId) return jsonError('Vous ne pouvez inviter que pour les tenues de votre loge.', 403);
 
   const visitors = await prisma.visitor.findMany({ where: { lodgeId: meeting.lodgeId } });
-  if (visitors.length === 0) return jsonError("Aucun visiteur enregistré — ajoutez-en d'abord.", 400);
+  const subscriptions = await prisma.subscription.findMany({
+    where: { lodgeId: meeting.lodgeId },
+    include: { profile: true },
+  });
+  if (visitors.length === 0 && subscriptions.length === 0) {
+    return jsonError("Aucun visiteur enregistré ni membre abonné — ajoutez d'abord des visiteurs, ou attendez que des membres du réseau s'abonnent à votre loge.", 400);
+  }
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const validEmails = visitors.map((v) => v.email).filter((e) => EMAIL_RE.test(e));
-  const skipped = visitors.length - validEmails.length;
-  if (validEmails.length === 0) {
+  const visitorEmails = visitors.map((v) => v.email).filter((e) => EMAIL_RE.test(e));
+  const emailSubscribers = subscriptions.filter((s) => s.notifyByEmail).map((s) => s.profile.email);
+  const siteOnlySubscribers = subscriptions.filter((s) => !s.notifyByEmail);
+
+  const validEmails = [...new Set([...visitorEmails, ...emailSubscribers])];
+  const skipped = visitors.length - visitorEmails.length;
+  if (validEmails.length === 0 && siteOnlySubscribers.length === 0) {
     return jsonError("Aucune adresse e-mail valide parmi les visiteurs enregistrés — vérifiez le carnet de visiteurs.", 400);
   }
 
@@ -36,12 +46,23 @@ export async function POST(request) {
 
   const defaultSubject = `Invitation — Tenue du ${meeting.date.toISOString().slice(0, 10)} à ${meeting.lodge.name}`;
 
-  const result = await sendEmail({
-    bcc: validEmails,
-    subject: customSubject?.trim() || defaultSubject,
-    html,
-  });
-  if (!result.ok) return jsonError(`Échec de l'envoi : ${result.error}`, 502);
+  if (validEmails.length > 0) {
+    const result = await sendEmail({
+      bcc: validEmails,
+      subject: customSubject?.trim() || defaultSubject,
+      html,
+    });
+    if (!result.ok) return jsonError(`Échec de l'envoi : ${result.error}`, 502);
+  }
 
-  return json({ ok: true, sentTo: validEmails.length, skipped });
+  if (siteOnlySubscribers.length > 0) {
+    await prisma.notification.createMany({
+      data: siteOnlySubscribers.map((s) => ({
+        profileId: s.profileId,
+        text: `Nouvelle invitation de ${meeting.lodge.name} pour la tenue du ${meeting.date.toISOString().slice(0, 10)}.`,
+      })),
+    });
+  }
+
+  return json({ ok: true, sentTo: validEmails.length, notifiedInApp: siteOnlySubscribers.length, skipped });
 }

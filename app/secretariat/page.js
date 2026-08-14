@@ -189,7 +189,7 @@ export default function SecretariatPage() {
     });
     const b = await res.json().catch(() => ({}));
     if (!res.ok) { setNotice(b.error || 'Erreur.'); return; }
-    setNotice(`Invitations envoyées à ${b.sentTo} visiteur(s).${b.skipped ? ` (${b.skipped} adresse(s) invalide(s) ignorée(s) — vérifiez le carnet de visiteurs.)` : ''}`);
+    setNotice(`Invitations envoyées à ${b.sentTo} destinataire(s) par e-mail${b.notifiedInApp ? ` · ${b.notifiedInApp} membre(s) notifié(s) dans l'application` : ''}.${b.skipped ? ` (${b.skipped} adresse(s) invalide(s) ignorée(s) — vérifiez le carnet de visiteurs.)` : ''}`);
     setInviteEditorId(null);
   };
 

@@ -14,21 +14,48 @@ export default function LodgeDetailPage({ params }) {
   const [lodge, setLodge] = useState(null);
   const [meetings, setMeetings] = useState([]);
   const [obediences, setObediences] = useState([]);
+  const [mySubscription, setMySubscription] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [notice, setNotice] = useState('');
 
-  useEffect(() => {
-    (async () => {
-      const meRes = await fetch('/api/me');
-      if (!meRes.ok) { router.push('/login'); return; }
-      setMe(await meRes.json());
-      const [lodgeRes, obediencesRes] = await Promise.all([fetch(`/api/lodges/${params.id}`), fetch('/api/obediences')]);
-      if (!lodgeRes.ok) { setNotFound(true); return; }
-      const body = await lodgeRes.json();
-      setLodge(body.lodge);
-      setMeetings(body.meetings || []);
-      setObediences((await obediencesRes.json()).obediences || []);
-    })();
-  }, [params.id]);
+  const load = async () => {
+    const meRes = await fetch('/api/me');
+    if (!meRes.ok) { router.push('/login'); return; }
+    setMe(await meRes.json());
+    const [lodgeRes, obediencesRes, subsRes] = await Promise.all([
+      fetch(`/api/lodges/${params.id}`), fetch('/api/obediences'), fetch('/api/subscriptions'),
+    ]);
+    if (!lodgeRes.ok) { setNotFound(true); return; }
+    const body = await lodgeRes.json();
+    setLodge(body.lodge);
+    setMeetings(body.meetings || []);
+    setObediences((await obediencesRes.json()).obediences || []);
+    const subs = (await subsRes.json()).subscriptions || [];
+    setMySubscription(subs.find((s) => s.lodgeId === params.id) || null);
+  };
+  useEffect(() => { load(); }, [params.id]);
+
+  const subscribe = async () => {
+    const res = await fetch('/api/subscriptions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lodgeId: params.id, notifyByEmail: true }),
+    });
+    if (!res.ok) { const b = await res.json().catch(() => ({})); setNotice(b.error || 'Erreur.'); return; }
+    setNotice('Abonnement activé — vous recevrez les invitations de cette loge.');
+    load();
+  };
+  const unsubscribe = async () => {
+    await fetch(`/api/subscriptions/${mySubscription.id}`, { method: 'DELETE' });
+    setNotice('Désabonnement effectué.');
+    load();
+  };
+  const toggleSubscriptionEmail = async () => {
+    const res = await fetch(`/api/subscriptions/${mySubscription.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notifyByEmail: !mySubscription.notifyByEmail }),
+    });
+    if (res.ok) load();
+  };
 
   if (notFound) return <div style={{ padding: 40, textAlign: 'center' }}>Loge introuvable.</div>;
   if (!me || !lodge) return <div style={{ padding: 40 }}>Chargement…</div>;
@@ -80,6 +107,24 @@ export default function LodgeDetailPage({ params }) {
               {lodge.officers.map((o) => (
                 <div key={o.id} style={{ marginBottom: 3 }}>{OFFICER_LABEL[o.role]} : {truncateName(o.name)}{o.email ? ` — ${o.email}` : ''}</div>
               ))}
+            </div>
+          )}
+
+          {!isOwnLodge && (
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12, marginTop: 12 }}>
+              {notice && <p style={{ fontSize: 12.5, color: 'var(--slate)', marginBottom: 8 }}>{notice}</p>}
+              {mySubscription ? (
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12.5, color: 'var(--slate)' }}>Abonné(e) aux invitations de cette loge</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={mySubscription.notifyByEmail} onChange={toggleSubscriptionEmail} />
+                    Par e-mail
+                  </label>
+                  <button onClick={unsubscribe} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 12.5 }}>Se désabonner</button>
+                </div>
+              ) : (
+                <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={subscribe}>S'abonner aux invitations de cette loge</button>
+              )}
             </div>
           )}
         </div>
