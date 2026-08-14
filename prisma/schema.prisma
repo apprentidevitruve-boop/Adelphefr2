@@ -45,6 +45,7 @@ model Lodge {
   profiles      Profile[]
   meetings      Meeting[]
   documents     Document[]
+  documentFolders DocumentFolder[]
   visitorBook   Visitor[]
   subscriptions Subscription[]
 }
@@ -254,6 +255,20 @@ model Document {
   fileName    String?
   addedAt     DateTime @default(now())
   meetingLinks MeetingDocument[]
+  folder      DocumentFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folderId    String?
+}
+
+// Simple regroupement de documents similaires au sein de l'espace
+// documentaire d'une loge (ex. "Rituels", "Comptes-rendus 2026"...).
+model DocumentFolder {
+  id        String    @id @default(uuid())
+  lodge     Lodge     @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+  lodgeId   String
+  name      String
+  createdAt DateTime  @default(now())
+
+  documents Document[]
 }
 
 model Visitor {

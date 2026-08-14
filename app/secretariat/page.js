@@ -28,14 +28,15 @@ export default function SecretariatPage() {
     if (!meRes.ok) { router.push('/login'); return; }
     const meBody = await meRes.json();
     setMe(meBody);
-    const [meetingsRes, membersRes, requestsRes, documentsRes, visitorsRes, lodgesRes, ritesRes, pastRes] = await Promise.all([
-      fetch('/api/meetings'), fetch('/api/members'), fetch('/api/visit-requests'), fetch('/api/documents'), fetch('/api/visitors'), fetch('/api/lodges'), fetch('/api/rites'), fetch('/api/meetings/past'),
+    const [meetingsRes, membersRes, requestsRes, documentsRes, visitorsRes, lodgesRes, ritesRes, pastRes, foldersRes] = await Promise.all([
+      fetch('/api/meetings'), fetch('/api/members'), fetch('/api/visit-requests'), fetch('/api/documents'), fetch('/api/visitors'), fetch('/api/lodges'), fetch('/api/rites'), fetch('/api/meetings/past'), fetch('/api/document-folders'),
     ]);
     setMeetings((await meetingsRes.json()).meetings || []);
     setPastMeetings((await pastRes.json()).meetings || []);
     setMembers((await membersRes.json()).members || []);
     setRequests((await requestsRes.json()).visitRequests || []);
     setDocuments((await documentsRes.json()).documents || []);
+    setFolders((await foldersRes.json()).folders || []);
     setVisitors((await visitorsRes.json()).visitors || []);
     const allLodges = (await lodgesRes.json()).lodges || [];
     setLodge(allLodges.find((l) => l.id === meBody.profile.lodgeId) || null);
@@ -44,7 +45,7 @@ export default function SecretariatPage() {
   useEffect(() => { load(); }, []);
 
   // --- Nouvelle tenue / modification / duplication ---
-  const blankMeeting = { lodgeId: '', date: '', time: '19:30', minDegree: 'apprentice', type: 'regular', capacity: 5, agapesPrice: '', vegetarianOption: false, openingPoints: ['Ouverture des travaux', 'Lecture du tracé', 'Lecture de la correspondance'], planches: [''], closingPoints: ['Questions diverses', "Chaîne d'union", 'Fermeture des travaux'] };
+  const blankMeeting = { lodgeId: '', date: '', time: '19:30', minDegree: 'apprentice', type: 'regular', capacity: 5, agapesPrice: '', vegetarianOption: false, openingPoints: ['Ouverture des travaux', 'Lecture du tracé', 'Lecture de la correspondance'], planches: [''], closingPoints: ['Questions diverses', "Chaîne d'union", 'Fermeture des travaux'], documentIds: [] };
   const [form, setForm] = useState(blankMeeting);
   const [editingMeetingId, setEditingMeetingId] = useState(null);
   useEffect(() => { if (me) setForm((f) => ({ ...f, lodgeId: me.profile.lodgeId })); }, [me]);
@@ -72,6 +73,7 @@ export default function SecretariatPage() {
     openingPoints: m.openingPoints.map((p) => p.title),
     planches: m.planches.map((p) => p.title),
     closingPoints: m.closingPoints.map((p) => p.title),
+    documentIds: (m.documentLinks || []).map((l) => l.documentId),
   });
 
   const startEditMeeting = (m) => { setEditingMeetingId(m.id); setForm(meetingToForm(m)); window.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -200,9 +202,31 @@ export default function SecretariatPage() {
   };
 
   // --- Documents ---
-  const blankDoc = { title: '', minDegree: 'all', description: '', url: '', fileUrl: '', fileName: '' };
+  const blankDoc = { title: '', minDegree: 'all', description: '', url: '', fileUrl: '', fileName: '', folderId: '' };
   const [docForm, setDocForm] = useState(blankDoc);
   const [docFileInputKey, setDocFileInputKey] = useState(0);
+  const [folders, setFolders] = useState([]);
+  const [newFolderName, setNewFolderName] = useState('');
+  const createFolder = async (e) => {
+    e.preventDefault();
+    if (!newFolderName.trim()) return;
+    const res = await fetch('/api/document-folders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newFolderName }) });
+    if (!res.ok) { setNotice('Erreur.'); return; }
+    setNewFolderName('');
+    load();
+  };
+  const deleteFolder = async (id) => {
+    if (!window.confirm('Supprimer ce dossier ? Les documents qu\'il contient ne seront pas supprimés, juste déplacés hors dossier.')) return;
+    await fetch(`/api/document-folders/${id}`, { method: 'DELETE' });
+    load();
+  };
+  const moveDocumentToFolder = async (docId, folderId) => {
+    await fetch(`/api/documents/${docId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderId: folderId || null }),
+    });
+    load();
+  };
   const uploadDocFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -350,6 +374,27 @@ export default function SecretariatPage() {
               </div>
             ))}
             <button type="button" onClick={() => addToList('closingPoints')} style={{ background: 'none', border: 'none', fontSize: 12.5, cursor: 'pointer', marginBottom: 16 }}>+ Ajouter</button>
+
+            <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Documents à lier (facultatif)</div>
+            {documents.length === 0 ? (
+              <p style={{ fontSize: 12.5, color: 'var(--slate)', marginBottom: 16 }}>Aucun document dans l'espace documentaire pour l'instant.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16, maxHeight: 160, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8, padding: 10 }}>
+                {documents.map((d) => (
+                  <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.documentIds.includes(d.id)}
+                      onChange={(e) => setForm((f) => ({
+                        ...f,
+                        documentIds: e.target.checked ? [...f.documentIds, d.id] : f.documentIds.filter((id) => id !== d.id),
+                      }))}
+                    />
+                    {d.title}{d.folder ? ` · ${d.folder.name}` : ''}
+                  </label>
+                ))}
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="fd-button" type="submit">{editingMeetingId ? 'Enregistrer les modifications' : 'Créer la tenue'}</button>
@@ -533,21 +578,51 @@ export default function SecretariatPage() {
             </select>
             <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 70 }} placeholder="Description" value={docForm.description} onChange={(e) => setDocForm({ ...docForm, description: e.target.value })} />
             <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Lien externe (facultatif)" value={docForm.url} onChange={(e) => setDocForm({ ...docForm, url: e.target.value })} />
+            <select className="fd-input" style={{ marginBottom: 8 }} value={docForm.folderId} onChange={(e) => setDocForm({ ...docForm, folderId: e.target.value })}>
+              <option value="">Sans dossier</option>
+              {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
             <div style={{ marginBottom: 12 }}>
               <input key={docFileInputKey} type="file" onChange={uploadDocFile} />
               {docForm.fileName && <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>📎 {docForm.fileName}</div>}
             </div>
             <button className="fd-button" type="submit">Ajouter</button>
           </form>
-          {documents.map((d) => (
-            <div key={d.id} className="fd-card" style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{d.title}</div>
-                <div style={{ fontSize: 12, color: 'var(--slate)' }}>{DOC_LEVELS.find((l) => l.key === d.minDegree)?.label}</div>
+
+          <form onSubmit={createFolder} className="fd-card" style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
+            <input className="fd-input" style={{ flex: 1 }} placeholder="Nom du nouveau dossier (ex. Rituels, Comptes-rendus 2026…)" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} />
+            <button className="fd-button" type="submit" style={{ background: 'var(--slate)' }}>Créer un dossier</button>
+          </form>
+
+          {[...folders, { id: '', name: 'Sans dossier' }].map((f) => {
+            const docsInFolder = documents.filter((d) => (d.folderId || '') === f.id);
+            if (f.id === '' && docsInFolder.length === 0) return null;
+            return (
+              <div key={f.id || 'none'} style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <h4 style={{ margin: 0, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--slate)' }}>{f.name} ({docsInFolder.length})</h4>
+                  {f.id && <button onClick={() => deleteFolder(f.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 12 }}>Supprimer le dossier</button>}
+                </div>
+                {docsInFolder.length === 0 ? (
+                  <p style={{ fontSize: 12.5, color: 'var(--slate)' }}>Aucun document dans ce dossier.</p>
+                ) : docsInFolder.map((d) => (
+                  <div key={d.id} className="fd-card" style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{d.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--slate)' }}>{DOC_LEVELS.find((l) => l.key === d.minDegree)?.label}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <select className="fd-input" style={{ width: 160 }} value={d.folderId || ''} onChange={(e) => moveDocumentToFolder(d.id, e.target.value)}>
+                        <option value="">Sans dossier</option>
+                        {folders.map((fo) => <option key={fo.id} value={fo.id}>{fo.name}</option>)}
+                      </select>
+                      <button onClick={() => deleteDocument(d.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer' }}>Supprimer</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <button onClick={() => deleteDocument(d.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer' }}>Supprimer</button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

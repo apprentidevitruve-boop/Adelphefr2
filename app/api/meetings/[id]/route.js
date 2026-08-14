@@ -61,7 +61,7 @@ export async function PATCH(request, { params }) {
   if (!meeting) return jsonError('Tenue introuvable.', 404);
 
   const body = await request.json();
-  const { date, time, minDegree, type, capacity, agapesPrice, vegetarianOption, openingPoints, planches, closingPoints } = body;
+  const { date, time, minDegree, type, capacity, agapesPrice, vegetarianOption, openingPoints, planches, closingPoints, documentIds } = body;
   if (!date || !time || !Array.isArray(planches) || planches.filter((p) => p.trim()).length === 0) {
     return jsonError('Date, heure et au moins une planche sont requis.', 400);
   }
@@ -83,6 +83,14 @@ export async function PATCH(request, { params }) {
     },
     include: { openingPoints: true, planches: true, closingPoints: true },
   });
+
+  if (Array.isArray(documentIds)) {
+    const ownDocs = await prisma.document.findMany({ where: { id: { in: documentIds }, lodgeId: auth.profile.lodgeId } });
+    await prisma.$transaction([
+      prisma.meetingDocument.deleteMany({ where: { meetingId: params.id } }),
+      ...(ownDocs.length > 0 ? [prisma.meetingDocument.createMany({ data: ownDocs.map((d) => ({ meetingId: params.id, documentId: d.id })) })] : []),
+    ]);
+  }
 
   return json({ meeting: updated });
 }

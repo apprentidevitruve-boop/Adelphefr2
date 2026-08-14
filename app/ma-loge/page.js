@@ -102,20 +102,31 @@ export default function MaLogePage() {
       )}
 
       {tab === 'documents' && (
-        documents.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucun document accessible.</p> : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {documents.map((d) => (
-              <div key={d.id} className="fd-card">
-                <div style={{ fontWeight: 600 }}>{d.title}</div>
-                {d.description && <div style={{ fontSize: 13, color: 'var(--slate)', margin: '4px 0' }}>{d.description}</div>}
-                <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                  {d.url && <a href={d.url} target="_blank" rel="noreferrer"><button className="fd-button">Ouvrir le lien</button></a>}
-                  {d.fileUrl && <a href={d.fileUrl} target="_blank" rel="noreferrer"><button className="fd-button">{d.fileName || 'Pièce jointe'}</button></a>}
+        documents.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucun document accessible.</p> : (() => {
+          const folderNames = [...new Map(documents.filter((d) => d.folder).map((d) => [d.folder.id, d.folder.name])).entries()];
+          const groups = [...folderNames, [null, 'Sans dossier']];
+          return groups.map(([folderId, folderName]) => {
+            const docsInGroup = documents.filter((d) => (d.folder?.id || null) === folderId);
+            if (docsInGroup.length === 0) return null;
+            return (
+              <div key={folderId || 'none'} style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--slate)', marginBottom: 8 }}>{folderName}</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {docsInGroup.map((d) => (
+                    <div key={d.id} className="fd-card">
+                      <div style={{ fontWeight: 600 }}>{d.title}</div>
+                      {d.description && <div style={{ fontSize: 13, color: 'var(--slate)', margin: '4px 0' }}>{d.description}</div>}
+                      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                        {d.url && <a href={d.url} target="_blank" rel="noreferrer"><button className="fd-button">Ouvrir le lien</button></a>}
+                        {d.fileUrl && <a href={d.fileUrl} target="_blank" rel="noreferrer"><button className="fd-button">{d.fileName || 'Pièce jointe'}</button></a>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        )
+            );
+          });
+        })()
       )}
       </div>
     </div>

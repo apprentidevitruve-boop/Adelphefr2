@@ -13,6 +13,7 @@ export async function GET() {
     include: {
       lodge: { include: { obedience: true, rite: true } }, openingPoints: true, planches: true, closingPoints: true,
       attendees: { where: { profileId: profile.id } },
+      documentLinks: { select: { documentId: true } },
     },
     orderBy: { date: 'asc' },
   });
@@ -28,7 +29,7 @@ export async function POST(request) {
   const { profile } = auth;
 
   const body = await request.json();
-  const { date, time, minDegree, type, capacity, agapesPrice, vegetarianOption, openingPoints, planches, closingPoints } = body;
+  const { date, time, minDegree, type, capacity, agapesPrice, vegetarianOption, openingPoints, planches, closingPoints, documentIds } = body;
 
   if (profile.lodgeId !== body.lodgeId) return jsonError('Vous ne pouvez créer une tenue que pour votre propre loge.', 403);
   if (!date || !time || !Array.isArray(planches) || planches.filter((p) => p.trim()).length === 0) {
@@ -51,6 +52,17 @@ export async function POST(request) {
     },
     include: { openingPoints: true, planches: true, closingPoints: true },
   });
+
+  if (Array.isArray(documentIds) && documentIds.length > 0) {
+    // On ne lie que des documents appartenant réellement à sa propre
+    // loge — jamais ceux d'une autre, même si l'identifiant était deviné.
+    const ownDocs = await prisma.document.findMany({ where: { id: { in: documentIds }, lodgeId: profile.lodgeId } });
+    if (ownDocs.length > 0) {
+      await prisma.meetingDocument.createMany({
+        data: ownDocs.map((d) => ({ meetingId: meeting.id, documentId: d.id })),
+      });
+    }
+  }
 
   return json({ meeting }, 201);
 }

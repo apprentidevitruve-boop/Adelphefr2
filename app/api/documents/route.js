@@ -9,7 +9,7 @@ export async function GET() {
   if (auth.error) return auth.error;
   const { profile } = auth;
 
-  const documents = await prisma.document.findMany({ where: { lodgeId: profile.lodgeId }, orderBy: { addedAt: 'desc' } });
+  const documents = await prisma.document.findMany({ where: { lodgeId: profile.lodgeId }, include: { folder: true }, orderBy: { addedAt: 'desc' } });
   const visible = documents.filter((d) => canAccessDocument(d, profile));
   return json({ documents: visible });
 }
@@ -19,11 +19,11 @@ export async function POST(request) {
   if (auth.error) return auth.error;
   const { profile } = auth;
 
-  const { title, minDegree, description, url, fileUrl, fileName } = await request.json();
+  const { title, minDegree, description, url, fileUrl, fileName, folderId } = await request.json();
   if (!title?.trim()) return jsonError('Titre requis.', 400);
 
   const document = await prisma.document.create({
-    data: { lodgeId: profile.lodgeId, title: title.trim(), minDegree: minDegree || 'all', description: description || '', url: url || null, fileUrl: fileUrl || null, fileName: fileName || null },
+    data: { lodgeId: profile.lodgeId, title: title.trim(), minDegree: minDegree || 'all', description: description || '', url: url || null, fileUrl: fileUrl || null, fileName: fileName || null, folderId: folderId || null },
   });
   return json({ document }, 201);
 }

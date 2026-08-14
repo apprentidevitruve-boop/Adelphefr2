@@ -13,10 +13,10 @@ export async function PATCH(request, { params }) {
   const doc = await loadOwnDocument(auth.profile, params.id);
   if (!doc) return jsonError('Document introuvable.', 404);
 
-  const { title, minDegree, description, url, fileUrl, fileName } = await request.json();
+  const { title, minDegree, description, url, fileUrl, fileName, folderId } = await request.json();
   const updated = await prisma.document.update({
     where: { id: params.id },
-    data: { title, minDegree, description, url, fileUrl, fileName },
+    data: { title, minDegree, description, url, fileUrl, fileName, folderId: folderId || null },
   });
   return json({ document: updated });
 }
