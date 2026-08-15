@@ -177,6 +177,9 @@ export default function SecretariatPage() {
       convocationAccentColor: lodge.convocationAccentColor || '#B08D57',
       convocationClosing: lodge.convocationClosing || 'Fraternellement,',
       convocationSignatureTitle: lodge.convocationSignatureTitle || 'Vénérable Maître',
+      convocationAegis: lodge.convocationAegis ?? 'A∴L∴G∴D∴G∴A∴D∴L∴U∴',
+      convocationIntro: lodge.convocationIntro ?? 'MM∴TT∴CC∴AA∴,\nNous avons le plaisir de vous faire parvenir la convocation à nos prochains travaux qui se dérouleront le :',
+      convocationAgapesIntro: lodge.convocationAgapesIntro ?? 'Nos travaux seront suivis d\'agapes fraternelles',
     });
   }, [lodge]);
   const [sealUploading, setSealUploading] = useState(false);
@@ -746,14 +749,35 @@ export default function SecretariatPage() {
               <input className="fd-input" style={{ marginTop: 4 }} value={lodgeForm.convocationClosing} onChange={(e) => setLodgeForm({ ...lodgeForm, convocationClosing: e.target.value })} />
             </label>
 
+            <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              Égide (abréviation affichée tout en haut, au-dessus du sceau — laisser vide pour ne rien afficher)
+            </label>
+            <input className="fd-input" style={{ marginBottom: 16 }} value={lodgeForm.convocationAegis} onChange={(e) => setLodgeForm({ ...lodgeForm, convocationAegis: e.target.value })} />
+
+            <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              Phrase d'introduction (au-dessus de la date de la tenue)
+            </label>
+            <textarea className="fd-input" style={{ marginBottom: 16, minHeight: 70 }} value={lodgeForm.convocationIntro} onChange={(e) => setLodgeForm({ ...lodgeForm, convocationIntro: e.target.value })} />
+
+            <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              Phrase d'introduction aux agapes (affichée seulement si la tenue en propose)
+            </label>
+            <input className="fd-input" style={{ marginBottom: 16 }} value={lodgeForm.convocationAgapesIntro} onChange={(e) => setLodgeForm({ ...lodgeForm, convocationAgapesIntro: e.target.value })} />
+
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 8 }}>Aperçu</div>
             <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid var(--line)', marginBottom: 16 }}>
               <div style={{ background: '#141414', color: '#fff', padding: '20px', textAlign: 'center' }}>
+                {lodgeForm.convocationAegis && <div style={{ fontSize: 11, color: '#B8B8B4', marginBottom: 8 }}>{lodgeForm.convocationAegis}</div>}
                 <div style={{ fontSize: 11, letterSpacing: '0.28em', color: lodgeForm.convocationAccentColor, textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>Convocation</div>
                 <div style={{ fontSize: 17, fontWeight: 700 }}>{lodge?.name}</div>
               </div>
               <div style={{ background: '#fff', padding: 16 }}>
-                <div style={{ fontSize: 13 }}>{lodgeForm.convocationClosing}</div>
+                {lodgeForm.convocationIntro && <div style={{ fontSize: 12.5, whiteSpace: 'pre-line', marginBottom: 10 }}>{lodgeForm.convocationIntro}</div>}
+                <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 10 }}>Tenue au 1er degré de la Franc-Maçonnerie</div>
+                {lodgeForm.convocationAgapesIntro && (
+                  <div style={{ fontSize: 12.5, borderTop: '1px solid #E2E1DC', paddingTop: 10, marginBottom: 10 }}>{lodgeForm.convocationAgapesIntro}<br />20 € · menu végétarien disponible</div>
+                )}
+                <div style={{ fontSize: 13, borderTop: '1px solid #E2E1DC', paddingTop: 10 }}>{lodgeForm.convocationClosing}</div>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>
                   {lodge?.officers?.find((o) => o.role === 'president') ? `${truncateName(lodge.officers.find((o) => o.role === 'president').name)}, ` : ''}
                   <span style={{ color: lodgeForm.convocationAccentColor }}>{lodgeForm.convocationSignatureTitle}</span>

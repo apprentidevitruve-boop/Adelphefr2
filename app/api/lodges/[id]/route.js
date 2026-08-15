@@ -42,12 +42,17 @@ export async function PATCH(request, { params }) {
   }
 
   const body = await request.json();
-  const { name, lodgeNumber, riteId, obedienceId, city, meetingLocation, description, pmrAccess, mixte, sealImageUrl, officers, convocationAccentColor, convocationClosing, convocationSignatureTitle } = body;
+  const { name, lodgeNumber, riteId, obedienceId, city, meetingLocation, description, pmrAccess, mixte, sealImageUrl, officers, convocationAccentColor, convocationClosing, convocationSignatureTitle, convocationAegis, convocationIntro, convocationAgapesIntro } = body;
 
   const data = { description, pmrAccess: !!pmrAccess, mixte: !!mixte, sealImageUrl, riteId: riteId || null };
   if (convocationAccentColor !== undefined) data.convocationAccentColor = convocationAccentColor || '#B08D57';
   if (convocationClosing !== undefined) data.convocationClosing = convocationClosing || 'Fraternellement,';
   if (convocationSignatureTitle !== undefined) data.convocationSignatureTitle = convocationSignatureTitle || 'Vénérable Maître';
+  // Ces trois champs peuvent volontairement être laissés vides (rien
+  // ne s'affiche alors sur la convocation) — pas de valeur de repli.
+  if (convocationAegis !== undefined) data.convocationAegis = convocationAegis;
+  if (convocationIntro !== undefined) data.convocationIntro = convocationIntro;
+  if (convocationAgapesIntro !== undefined) data.convocationAgapesIntro = convocationAgapesIntro;
   if (isAdmin) {
     Object.assign(data, { name, lodgeNumber, obedienceId, city, meetingLocation });
   }

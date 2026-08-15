@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DEGREES, truncateName } from '../../../lib/constants';
+import { DEGREES, truncateName, degreeTenueLabel } from '../../../lib/constants';
 
 const OFFICER_LABEL = { president: 'Président.e', secretary: 'Secrétaire', treasurer: 'Trésorier.ère' };
 
@@ -55,6 +55,9 @@ export default function ConvocationPage({ params }) {
 
         {/* Bandeau sombre — identité de la loge */}
         <div style={{ background: '#141414', color: '#fff', padding: '40px 32px 32px', textAlign: 'center' }}>
+          {lodge.convocationAegis && (
+            <div style={{ fontSize: 12, color: '#B8B8B4', marginBottom: 16, letterSpacing: '0.03em' }}>{lodge.convocationAegis}</div>
+          )}
           {lodge.sealImageUrl && (
             <img src={lodge.sealImageUrl} alt="" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', marginBottom: 14, border: `2px solid ${accent}` }} />
           )}
@@ -69,6 +72,12 @@ export default function ConvocationPage({ params }) {
 
         {/* Corps — programme */}
         <div style={{ background: '#fff', padding: '32px', borderLeft: '1px solid #E2E1DC', borderRight: '1px solid #E2E1DC' }}>
+          {lodge.convocationIntro && (
+            <p style={{ fontSize: 14, whiteSpace: 'pre-line', margin: '0 0 14px' }}>{lodge.convocationIntro}</p>
+          )}
+          {degreeTenueLabel(meeting.minDegree) && (
+            <p style={{ fontSize: 13.5, fontWeight: 700, margin: '0 0 10px' }}>{degreeTenueLabel(meeting.minDegree)}</p>
+          )}
           <p style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>
             {new Date(meeting.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à {meeting.time}
           </p>
@@ -88,7 +97,8 @@ export default function ConvocationPage({ params }) {
 
           {meeting.agapesPrice != null && (
             <p style={{ fontSize: 13.5, borderTop: '1px solid #E2E1DC', paddingTop: 14, marginTop: 20 }}>
-              Agapes fraternelles à l'issue de la tenue — {meeting.agapesPrice} €{meeting.vegetarianOption ? ' (menu végétarien disponible)' : ''}
+              {lodge.convocationAgapesIntro && <>{lodge.convocationAgapesIntro}<br /></>}
+              {meeting.agapesPrice} €{meeting.vegetarianOption ? ' · menu végétarien disponible' : ''}
             </p>
           )}
 

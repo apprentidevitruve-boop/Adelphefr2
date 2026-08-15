@@ -44,6 +44,15 @@ model Lodge {
   convocationAccentColor   String  @default("#B08D57")
   convocationClosing       String  @default("Fraternellement,")
   convocationSignatureTitle String @default("Vénérable Maître")
+  // Abréviation d'égide (ex. "A∴L∴G∴D∴G∴A∴D∴L∴U∴"), affichée tout en
+  // haut de la convocation, au-dessus du sceau. Vide = rien n'apparaît.
+  convocationAegis         String @default("A∴L∴G∴D∴G∴A∴D∴L∴U∴")
+  // Phrase d'introduction, au-dessus de la date/heure. Peut contenir
+  // un retour à la ligne.
+  convocationIntro         String @default("MM∴TT∴CC∴AA∴,\nNous avons le plaisir de vous faire parvenir la convocation à nos prochains travaux qui se dérouleront le :")
+  // Phrase d'introduction aux agapes, affichée uniquement si la tenue
+  // en propose (prix et option végétarienne restent affichés en dessous).
+  convocationAgapesIntro   String @default("Nos travaux seront suivis d'agapes fraternelles")
   createdAt        DateTime @default(now())
 
   officers      Officer[]
