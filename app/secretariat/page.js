@@ -23,6 +23,9 @@ export default function SecretariatPage() {
   const [pastDegreeFilter, setPastDegreeFilter] = useState('all');
   const [pastDateFilter, setPastDateFilter] = useState('');
   const [pastSearch, setPastSearch] = useState('');
+  const [upcomingDegreeFilter, setUpcomingDegreeFilter] = useState('all');
+  const [upcomingDateFilter, setUpcomingDateFilter] = useState('');
+  const [upcomingSearch, setUpcomingSearch] = useState('');
   const [showDocPicker, setShowDocPicker] = useState(false);
 
   // L'onglet actif est reflété dans l'URL (?tab=...) pour que le
@@ -439,10 +442,34 @@ export default function SecretariatPage() {
             </div>
           </form>
 
-          {meetings.filter((m) => m.lodgeId === me.profile.lodgeId).map((m) => (
+          <div className="fd-card" style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <select className="fd-input" style={{ width: 180 }} value={upcomingDegreeFilter} onChange={(e) => setUpcomingDegreeFilter(e.target.value)}>
+              <option value="all">Tous les grades</option>
+              {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+            </select>
+            <input className="fd-input" type="date" style={{ width: 170 }} value={upcomingDateFilter} onChange={(e) => setUpcomingDateFilter(e.target.value)} />
+            <input className="fd-input" style={{ flex: '1 1 200px' }} placeholder="Rechercher (sujet, planche…)" value={upcomingSearch} onChange={(e) => setUpcomingSearch(e.target.value)} />
+          </div>
+
+          {(() => {
+            const q = upcomingSearch.trim().toLowerCase();
+            const filteredUpcoming = meetings
+              .filter((m) => m.lodgeId === me.profile.lodgeId)
+              .filter((m) => upcomingDegreeFilter === 'all' || m.minDegree === upcomingDegreeFilter)
+              .filter((m) => !upcomingDateFilter || new Date(m.date).toISOString().slice(0, 10) === upcomingDateFilter)
+              .filter((m) => !q || [...m.openingPoints, ...m.planches, ...m.closingPoints].some((p) => p.title.toLowerCase().includes(q)));
+
+            return filteredUpcoming.length === 0 ? (
+              <p style={{ color: 'var(--slate)' }}>Aucune tenue à venir ne correspond à ces filtres.</p>
+            ) : filteredUpcoming.map((m) => (
             <div key={m.id} className="fd-card" style={{ marginBottom: 10 }}>
-              <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--slate)' }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--slate)' }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time}</div>
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap' }}>{degreeLabel(m.minDegree)}</span>
+              </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                 <button className="fd-button" onClick={() => openInviteEditor(m)}>Envoyer les invitations aux visiteurs</button>
                 <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => copyConvocationLink(m)}>Copier le lien de convocation</button>
@@ -464,7 +491,8 @@ export default function SecretariatPage() {
               )}
               <MeetingParticipants meetingId={m.id} />
             </div>
-          ))}
+            ));
+          })()}
         </div>
       )}
 
@@ -493,10 +521,15 @@ export default function SecretariatPage() {
                 {filteredPast.map((m) => (
                   <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="fd-card" style={{ cursor: 'pointer' }}>
-                      <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
-                      <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>
-                        {new Date(m.date).toLocaleDateString('fr-FR')} · {degreeLabel(m.minDegree)}
-                        {m.documentLinks?.length > 0 && ` · 📎 ${m.documentLinks.length} document(s) lié(s)`}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
+                          <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>
+                            {new Date(m.date).toLocaleDateString('fr-FR')}
+                            {m.documentLinks?.length > 0 && ` · 📎 ${m.documentLinks.length} document(s) lié(s)`}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap' }}>{degreeLabel(m.minDegree)}</span>
                       </div>
                     </div>
                   </Link>
