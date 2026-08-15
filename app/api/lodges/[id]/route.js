@@ -42,9 +42,12 @@ export async function PATCH(request, { params }) {
   }
 
   const body = await request.json();
-  const { name, lodgeNumber, riteId, obedienceId, city, meetingLocation, description, pmrAccess, mixte, sealImageUrl, officers } = body;
+  const { name, lodgeNumber, riteId, obedienceId, city, meetingLocation, description, pmrAccess, mixte, sealImageUrl, officers, convocationAccentColor, convocationClosing, convocationSignatureTitle } = body;
 
   const data = { description, pmrAccess: !!pmrAccess, mixte: !!mixte, sealImageUrl, riteId: riteId || null };
+  if (convocationAccentColor !== undefined) data.convocationAccentColor = convocationAccentColor || '#B08D57';
+  if (convocationClosing !== undefined) data.convocationClosing = convocationClosing || 'Fraternellement,';
+  if (convocationSignatureTitle !== undefined) data.convocationSignatureTitle = convocationSignatureTitle || 'Vénérable Maître';
   if (isAdmin) {
     Object.assign(data, { name, lodgeNumber, obedienceId, city, meetingLocation });
   }

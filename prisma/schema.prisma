@@ -39,6 +39,11 @@ model Lodge {
   sealImageUrl     String?
   pmrAccess        Boolean  @default(false)
   mixte            Boolean  @default(false)
+  // Personnalisation simple de la convocation — pas d'éditeur visuel,
+  // juste quelques réglages appliqués au modèle déjà mis en forme.
+  convocationAccentColor   String  @default("#B08D57")
+  convocationClosing       String  @default("Fraternellement,")
+  convocationSignatureTitle String @default("Vénérable Maître")
   createdAt        DateTime @default(now())
 
   officers      Officer[]

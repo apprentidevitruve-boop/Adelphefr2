@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { DEGREES, MEETING_TYPES, DOC_LEVELS, degreeLabel, roleLabel } from '../../lib/constants';
+import { DEGREES, MEETING_TYPES, DOC_LEVELS, degreeLabel, roleLabel, truncateName } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 import DocumentPickerModal from '../../components/DocumentPickerModal';
 
@@ -172,7 +172,12 @@ export default function SecretariatPage() {
   // --- Ma loge (informations de base, accessible au bureau) ---
   const [lodgeForm, setLodgeForm] = useState(null);
   useEffect(() => {
-    if (lodge) setLodgeForm({ riteId: lodge.riteId || '', description: lodge.description || '', pmrAccess: !!lodge.pmrAccess, mixte: !!lodge.mixte, sealImageUrl: lodge.sealImageUrl || '' });
+    if (lodge) setLodgeForm({
+      riteId: lodge.riteId || '', description: lodge.description || '', pmrAccess: !!lodge.pmrAccess, mixte: !!lodge.mixte, sealImageUrl: lodge.sealImageUrl || '',
+      convocationAccentColor: lodge.convocationAccentColor || '#B08D57',
+      convocationClosing: lodge.convocationClosing || 'Fraternellement,',
+      convocationSignatureTitle: lodge.convocationSignatureTitle || 'Vénérable Maître',
+    });
   }, [lodge]);
   const [sealUploading, setSealUploading] = useState(false);
   const uploadSeal = async (e) => {
@@ -714,6 +719,48 @@ export default function SecretariatPage() {
               <input type="checkbox" checked={lodgeForm.mixte} onChange={(e) => setLodgeForm({ ...lodgeForm, mixte: e.target.checked })} />
               Loge mixte
             </label>
+            <button className="fd-button" type="submit">Enregistrer</button>
+          </form>
+
+          <form onSubmit={saveLodgeSettings} className="fd-card" style={{ marginBottom: 20 }}>
+            <h3 style={{ marginTop: 0 }}>Personnalisation de la convocation</h3>
+            <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: -6, marginBottom: 16 }}>
+              Ces réglages s'appliquent automatiquement à la page de convocation envoyée à vos invités.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 600 }}>
+                Couleur d'accent
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <input type="color" value={lodgeForm.convocationAccentColor} onChange={(e) => setLodgeForm({ ...lodgeForm, convocationAccentColor: e.target.value })} style={{ width: 44, height: 34, border: '1.5px solid var(--line)', borderRadius: 6, padding: 2 }} />
+                  <input className="fd-input" value={lodgeForm.convocationAccentColor} onChange={(e) => setLodgeForm({ ...lodgeForm, convocationAccentColor: e.target.value })} />
+                </div>
+              </label>
+              <label style={{ fontSize: 12.5, fontWeight: 600 }}>
+                Titre du signataire
+                <input className="fd-input" style={{ marginTop: 4 }} value={lodgeForm.convocationSignatureTitle} onChange={(e) => setLodgeForm({ ...lodgeForm, convocationSignatureTitle: e.target.value })} />
+              </label>
+            </div>
+            <label style={{ fontSize: 12.5, fontWeight: 600, display: 'block', marginBottom: 16 }}>
+              Formule de clôture
+              <input className="fd-input" style={{ marginTop: 4 }} value={lodgeForm.convocationClosing} onChange={(e) => setLodgeForm({ ...lodgeForm, convocationClosing: e.target.value })} />
+            </label>
+
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 8 }}>Aperçu</div>
+            <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid var(--line)', marginBottom: 16 }}>
+              <div style={{ background: '#141414', color: '#fff', padding: '20px', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, letterSpacing: '0.28em', color: lodgeForm.convocationAccentColor, textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>Convocation</div>
+                <div style={{ fontSize: 17, fontWeight: 700 }}>{lodge?.name}</div>
+              </div>
+              <div style={{ background: '#fff', padding: 16 }}>
+                <div style={{ fontSize: 13 }}>{lodgeForm.convocationClosing}</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>
+                  {lodge?.officers?.find((o) => o.role === 'president') ? `${truncateName(lodge.officers.find((o) => o.role === 'president').name)}, ` : ''}
+                  <span style={{ color: lodgeForm.convocationAccentColor }}>{lodgeForm.convocationSignatureTitle}</span>
+                </div>
+              </div>
+            </div>
+
             <button className="fd-button" type="submit">Enregistrer</button>
           </form>
 
