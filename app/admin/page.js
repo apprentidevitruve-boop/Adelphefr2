@@ -18,6 +18,7 @@ export default function AdminPage() {
   const [lodges, setLodges] = useState([]);
   const [users, setUsers] = useState([]);
   const [obediences, setObediences] = useState([]);
+  const [subscriptionRequests, setSubscriptionRequests] = useState([]);
   const [rites, setRites] = useState([]);
   const [notice, setNotice] = useState('');
 
@@ -27,11 +28,12 @@ export default function AdminPage() {
     const meBody = await meRes.json();
     if (meBody.profile.role !== 'admin') { router.push('/dashboard'); return; }
     setMe(meBody);
-    const [lodgesRes, usersRes, obediencesRes, ritesRes] = await Promise.all([fetch('/api/lodges'), fetch('/api/users'), fetch('/api/obediences'), fetch('/api/rites')]);
+    const [lodgesRes, usersRes, obediencesRes, ritesRes, subReqRes] = await Promise.all([fetch('/api/lodges'), fetch('/api/users'), fetch('/api/obediences'), fetch('/api/rites'), fetch('/api/subscription-requests')]);
     setLodges((await lodgesRes.json()).lodges || []);
     setUsers((await usersRes.json()).users || []);
     setObediences((await obediencesRes.json()).obediences || []);
     setRites((await ritesRes.json()).rites || []);
+    setSubscriptionRequests((await subReqRes.json()).requests || []);
   };
   useEffect(() => { load(); }, []);
 
@@ -209,10 +211,10 @@ export default function AdminPage() {
       {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)' }}>
-        {['lodges', 'users', 'obediences', 'rites'].map((t) => (
+        {['lodges', 'users', 'obediences', 'rites', 'subscriptions'].map((t) => (
           <button key={t} onClick={() => setTab(t)}
             style={{ background: 'none', border: 'none', padding: '10px 6px', cursor: 'pointer', fontWeight: 600, borderBottom: tab === t ? '2px solid var(--ink)' : '2px solid transparent' }}>
-            {{ lodges: 'Loges', users: 'Utilisateurs', obediences: 'Obédiences', rites: 'Rites' }[t]}
+            {{ lodges: 'Loges', users: 'Utilisateurs', obediences: 'Obédiences', rites: 'Rites', subscriptions: 'Demandes d\'adhésion' }[t]}
           </button>
         ))}
       </div>
@@ -444,6 +446,26 @@ export default function AdminPage() {
             <div key={r.id} className="fd-card" style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontWeight: 600 }}>{r.name} {r.abbreviation && <span style={{ fontWeight: 400, color: 'var(--slate)', fontSize: 12 }}>({r.abbreviation})</span>}</div>
               <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => deleteRite(r)}>Supprimer</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'subscriptions' && (
+        <div>
+          {subscriptionRequests.length === 0 ? (
+            <p style={{ color: 'var(--slate)' }}>Aucune demande d'adhésion pour l'instant.</p>
+          ) : subscriptionRequests.map((r) => (
+            <div key={r.id} className="fd-card" style={{ marginBottom: 8 }}>
+              <div style={{ fontWeight: 600 }}>{r.lodgeName} — {r.city}</div>
+              <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>
+                {[r.rite, r.obedience].filter(Boolean).join(' · ')}{r.memberCount ? ` · ~${r.memberCount} membres` : ''}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--slate)', marginTop: 4 }}>
+                Contact : {r.contactName} — {r.contactEmail}{r.contactPhone ? ` — ${r.contactPhone}` : ''}
+              </div>
+              {r.message && <div style={{ fontSize: 13, marginTop: 6 }}>{r.message}</div>}
+              <div style={{ fontSize: 11.5, color: 'var(--slate-light)', marginTop: 6 }}>{new Date(r.createdAt).toLocaleDateString('fr-FR')}</div>
             </div>
           ))}
         </div>

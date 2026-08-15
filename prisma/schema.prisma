@@ -296,6 +296,24 @@ model Visitor {
   addedAt   DateTime @default(now())
 }
 
+// Demande d'adhésion au réseau, soumise depuis la page publique
+// "Rejoindre le réseau" par une loge prospective — ne crée aucun
+// compte automatiquement, juste une demande consultée par l'admin.
+model SubscriptionRequest {
+  id            String   @id @default(uuid())
+  lodgeName     String
+  city          String
+  rite          String?
+  obedience     String?
+  contactName   String
+  contactEmail  String
+  contactPhone  String?
+  memberCount   String?
+  message       String   @default("")
+  status        String   @default("pending") // pending | contacted | closed
+  createdAt     DateTime @default(now())
+}
+
 model Notification {
   id         String   @id @default(uuid())
   profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
