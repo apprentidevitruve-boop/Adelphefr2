@@ -7,7 +7,7 @@ export async function PATCH(request, { params }) {
   if (auth.error) return auth.error;
   const { profile } = auth;
 
-  const { status } = await request.json();
+  const { status, rejectionReason } = await request.json();
   if (!['approved', 'rejected'].includes(status)) return jsonError('Statut invalide.', 400);
 
   const reqRow = await prisma.visitRequest.findUnique({
@@ -17,7 +17,10 @@ export async function PATCH(request, { params }) {
   if (!reqRow) return jsonError('Demande introuvable.', 404);
   if (reqRow.meeting.lodgeId !== profile.lodgeId) return jsonError('Vous ne pouvez traiter que les demandes de votre loge.', 403);
 
-  await prisma.visitRequest.update({ where: { id: params.id }, data: { status } });
+  await prisma.visitRequest.update({
+    where: { id: params.id },
+    data: { status, rejectionReason: status === 'rejected' ? (rejectionReason || null) : null },
+  });
 
   if (status === 'approved' && reqRow.profileId) {
     await prisma.meetingAttendee.upsert({
@@ -33,7 +36,7 @@ export async function PATCH(request, { params }) {
         profileId: reqRow.profileId,
         text: status === 'approved'
           ? `Votre visite à "${reqRow.meeting.lodge.name}" a été approuvée.`
-          : `Votre visite à "${reqRow.meeting.lodge.name}" a été refusée.`,
+          : `Votre visite à "${reqRow.meeting.lodge.name}" a été refusée.${rejectionReason ? ` Motif : ${rejectionReason}` : ''}`,
       },
     });
   }
@@ -45,7 +48,7 @@ export async function PATCH(request, { params }) {
       : `Réponse à votre demande de visite à ${reqRow.meeting.lodge.name}`;
     const html = status === 'approved'
       ? `<p>Bonjour,</p><p>Votre demande de visite à <strong>${reqRow.meeting.lodge.name}</strong> a été <strong>approuvée</strong>. Vous serez accueilli(e) avec plaisir.</p>`
-      : `<p>Bonjour,</p><p>Votre demande de visite à <strong>${reqRow.meeting.lodge.name}</strong> n'a malheureusement pas pu être retenue cette fois-ci.</p>`;
+      : `<p>Bonjour,</p><p>Votre demande de visite à <strong>${reqRow.meeting.lodge.name}</strong> n'a malheureusement pas pu être retenue cette fois-ci.</p>${rejectionReason ? `<p>Motif : ${rejectionReason}</p>` : ''}`;
     await sendEmail({ to: recipientEmail, subject, html });
   }
 

@@ -103,7 +103,7 @@ export default function ConvocationPage({ params }) {
           )}
 
           <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #E2E1DC' }}>
-            <p style={{ fontSize: 14, margin: '0 0 4px' }}>{lodge.convocationClosing || 'Fraternellement,'}</p>
+            <p style={{ fontSize: 14, margin: '0 0 4px' }}>{lodge.convocationClosing || 'Adelphement,'}</p>
             {president && (
               <p style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>
                 {truncateName(president.name)}, <span style={{ color: accent }}>{lodge.convocationSignatureTitle || 'Vénérable Maître'}</span>

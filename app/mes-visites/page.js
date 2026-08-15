@@ -53,6 +53,9 @@ export default function MesVisitesPage() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: STATUS_COLOR[r.status] }}>{STATUS_LABEL[r.status]}</span>
+                    {r.status === 'rejected' && r.rejectionReason && (
+                      <div style={{ fontSize: 11.5, color: 'var(--slate)', marginTop: 2 }}>Motif : {r.rejectionReason}</div>
+                    )}
                     {r.status === 'pending' && (
                       <div style={{ marginTop: 6 }}>
                         <button onClick={() => cancelVisit(r.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 12.5 }}>Annuler</button>

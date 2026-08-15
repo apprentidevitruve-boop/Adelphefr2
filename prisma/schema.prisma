@@ -42,7 +42,7 @@ model Lodge {
   // Personnalisation simple de la convocation — pas d'éditeur visuel,
   // juste quelques réglages appliqués au modèle déjà mis en forme.
   convocationAccentColor   String  @default("#B08D57")
-  convocationClosing       String  @default("Fraternellement,")
+  convocationClosing       String  @default("Adelphement,")
   convocationSignatureTitle String @default("Vénérable Maître")
   // Abréviation d'égide (ex. "A∴L∴G∴D∴G∴A∴D∴L∴U∴"), affichée tout en
   // haut de la convocation, au-dessus du sceau. Vide = rien n'apparaît.
@@ -252,6 +252,7 @@ model VisitRequest {
   guestLodge      String?
   guestObedience  String?
   status          String   @default("pending") // pending | approved | rejected
+  rejectionReason String?  // motif du refus, choisi ou saisi librement par le secrétariat
   wantsAgapes     Boolean  @default(false)
   wantsVegetarian Boolean  @default(false)
   createdAt       DateTime @default(now())

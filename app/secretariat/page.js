@@ -121,11 +121,21 @@ export default function SecretariatPage() {
     setNotice(`Lien copié : ${link}`);
   };
 
-  const resolveRequest = async (id, status) => {
-    const res = await fetch(`/api/visit-requests/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+  const [rejectingId, setRejectingId] = useState(null);
+  const [rejectionPreset, setRejectionPreset] = useState('Tenue complète');
+  const [rejectionCustom, setRejectionCustom] = useState('');
+  const resolveRequest = async (id, status, rejectionReason) => {
+    const res = await fetch(`/api/visit-requests/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, rejectionReason }) });
     if (!res.ok) { setNotice('Erreur.'); return; }
     setNotice(status === 'approved' ? 'Demande approuvée — e-mail envoyé via Brevo.' : 'Demande refusée — e-mail envoyé via Brevo.');
+    setRejectingId(null);
+    setRejectionPreset('Tenue complète');
+    setRejectionCustom('');
     load();
+  };
+  const confirmRejection = (id) => {
+    const reason = rejectionPreset === 'Autre' ? rejectionCustom.trim() : rejectionPreset;
+    resolveRequest(id, 'rejected', reason || null);
   };
 
   // --- Nouveau membre / modification ---
@@ -175,7 +185,7 @@ export default function SecretariatPage() {
     if (lodge) setLodgeForm({
       riteId: lodge.riteId || '', description: lodge.description || '', pmrAccess: !!lodge.pmrAccess, mixte: !!lodge.mixte, sealImageUrl: lodge.sealImageUrl || '',
       convocationAccentColor: lodge.convocationAccentColor || '#B08D57',
-      convocationClosing: lodge.convocationClosing || 'Fraternellement,',
+      convocationClosing: lodge.convocationClosing || 'Adelphement,',
       convocationSignatureTitle: lodge.convocationSignatureTitle || 'Vénérable Maître',
       convocationAegis: lodge.convocationAegis ?? 'A∴L∴G∴D∴G∴A∴D∴L∴U∴',
       convocationIntro: lodge.convocationIntro ?? 'MM∴TT∴CC∴AA∴,\nNous avons le plaisir de vous faire parvenir la convocation à nos prochains travaux qui se dérouleront le :',
@@ -500,22 +510,49 @@ export default function SecretariatPage() {
       {tab === 'requests' && (
         <div>
           {requests.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucune demande.</p> : requests.map((r) => (
-            <div key={r.id} className="fd-card" style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{r.profile ? r.profile.name : r.guestName}{!r.profile && ' (visiteur non inscrit)'}</div>
-                <div style={{ fontSize: 13, color: 'var(--slate)' }}>{r.meeting?.planches?.[0]?.title} · {new Date(r.meeting?.date).toLocaleDateString('fr-FR')}</div>
-                {!r.profile && (r.guestDegree || r.guestLodge || r.guestObedience) && (
-                  <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 2 }}>
-                    {[degreeLabel(r.guestDegree), r.guestLodge, r.guestObedience].filter(Boolean).join(' · ')}
+            <div key={r.id} className="fd-card" style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{r.profile ? r.profile.name : r.guestName}{!r.profile && ' (visiteur non inscrit)'}</div>
+                  <div style={{ fontSize: 13, color: 'var(--slate)' }}>{r.meeting?.planches?.[0]?.title} · {new Date(r.meeting?.date).toLocaleDateString('fr-FR')}</div>
+                  {!r.profile && (r.guestDegree || r.guestLodge || r.guestObedience) && (
+                    <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 2 }}>
+                      {[degreeLabel(r.guestDegree), r.guestLodge, r.guestObedience].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                </div>
+                {r.status === 'pending' ? (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="fd-button" onClick={() => resolveRequest(r.id, 'approved')}>Approuver</button>
+                    <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => setRejectingId(rejectingId === r.id ? null : r.id)}>Refuser</button>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'right' }}>
+                    <span>{r.status === 'approved' ? 'Approuvée' : 'Refusée'}</span>
+                    {r.status === 'rejected' && r.rejectionReason && (
+                      <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 2 }}>Motif : {r.rejectionReason}</div>
+                    )}
                   </div>
                 )}
               </div>
-              {r.status === 'pending' ? (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="fd-button" onClick={() => resolveRequest(r.id, 'approved')}>Approuver</button>
-                  <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => resolveRequest(r.id, 'rejected')}>Refuser</button>
+
+              {rejectingId === r.id && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Motif du refus</div>
+                  <select className="fd-input" style={{ marginBottom: 8 }} value={rejectionPreset} onChange={(e) => setRejectionPreset(e.target.value)}>
+                    <option value="Tenue complète">Tenue complète</option>
+                    <option value="Grade insuffisant">Grade insuffisant</option>
+                    <option value="Autre">Autre (préciser)</option>
+                  </select>
+                  {rejectionPreset === 'Autre' && (
+                    <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Précisez le motif…" value={rejectionCustom} onChange={(e) => setRejectionCustom(e.target.value)} />
+                  )}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => confirmRejection(r.id)}>Confirmer le refus</button>
+                    <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setRejectingId(null)}>Annuler</button>
+                  </div>
                 </div>
-              ) : <span>{r.status === 'approved' ? 'Approuvée' : 'Refusée'}</span>}
+              )}
             </div>
           ))}
         </div>

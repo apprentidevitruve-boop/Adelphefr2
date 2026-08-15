@@ -46,7 +46,7 @@ export async function PATCH(request, { params }) {
 
   const data = { description, pmrAccess: !!pmrAccess, mixte: !!mixte, sealImageUrl, riteId: riteId || null };
   if (convocationAccentColor !== undefined) data.convocationAccentColor = convocationAccentColor || '#B08D57';
-  if (convocationClosing !== undefined) data.convocationClosing = convocationClosing || 'Fraternellement,';
+  if (convocationClosing !== undefined) data.convocationClosing = convocationClosing || 'Adelphement,';
   if (convocationSignatureTitle !== undefined) data.convocationSignatureTitle = convocationSignatureTitle || 'Vénérable Maître';
   // Ces trois champs peuvent volontairement être laissés vides (rien
   // ne s'affiche alors sur la convocation) — pas de valeur de repli.
