@@ -134,7 +134,7 @@ export default function LodgeDetailPage({ params }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {meetings.map((m) => (
               <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div className="fd-card" style={{ cursor: 'pointer' }}>
+                <div className="fd-card fd-card-accent" style={{ cursor: 'pointer' }}>
                   <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
                   <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time}</div>
                 </div>

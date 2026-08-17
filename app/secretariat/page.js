@@ -65,6 +65,7 @@ export default function SecretariatPage() {
   const blankMeeting = { lodgeId: '', date: '', time: '19:30', minDegree: 'apprentice', type: 'regular', capacity: 5, agapesPrice: '', vegetarianOption: false, openingPoints: ['Ouverture des travaux', 'Lecture du tracé', 'Lecture de la correspondance'], planches: [''], closingPoints: ['Questions diverses', "Chaîne d'union", 'Fermeture des travaux'], documentIds: [] };
   const [form, setForm] = useState(blankMeeting);
   const [editingMeetingId, setEditingMeetingId] = useState(null);
+  const [showMeetingForm, setShowMeetingForm] = useState(false);
   useEffect(() => { if (me) setForm((f) => ({ ...f, lodgeId: me.profile.lodgeId })); }, [me]);
 
   const updateList = (key, i, value) => setForm((f) => ({ ...f, [key]: f[key].map((v, idx) => idx === i ? value : v) }));
@@ -93,9 +94,9 @@ export default function SecretariatPage() {
     documentIds: (m.documentLinks || []).map((l) => l.documentId),
   });
 
-  const startEditMeeting = (m) => { setEditingMeetingId(m.id); setForm(meetingToForm(m)); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const duplicateMeeting = (m) => { setEditingMeetingId(null); setForm({ ...meetingToForm(m), date: '' }); setNotice('Tenue dupliquée — ajustez la date puis enregistrez.'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const cancelEditMeeting = () => { setEditingMeetingId(null); setForm({ ...blankMeeting, lodgeId: me.profile.lodgeId }); };
+  const startEditMeeting = (m) => { setEditingMeetingId(m.id); setForm(meetingToForm(m)); setShowMeetingForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const duplicateMeeting = (m) => { setEditingMeetingId(null); setForm({ ...meetingToForm(m), date: '' }); setShowMeetingForm(true); setNotice('Tenue dupliquée — ajustez la date puis enregistrez.'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const cancelEditMeeting = () => { setEditingMeetingId(null); setShowMeetingForm(false); setForm({ ...blankMeeting, lodgeId: me.profile.lodgeId }); };
 
   const createMeeting = async (e) => {
     e.preventDefault();
@@ -108,6 +109,7 @@ export default function SecretariatPage() {
     if (!res.ok) { const b = await res.json().catch(() => ({})); setNotice(b.error || 'Erreur.'); return; }
     setNotice(isEdit ? 'Tenue mise à jour.' : 'Tenue créée.');
     setEditingMeetingId(null);
+    setShowMeetingForm(false);
     setForm({ ...blankMeeting, lodgeId: me.profile.lodgeId });
     load();
   };
@@ -352,7 +354,11 @@ export default function SecretariatPage() {
 
       {tab === 'meetings' && (
         <div>
-          <form onSubmit={createMeeting} className="fd-card" style={{ marginBottom: 20, border: editingMeetingId ? '1.5px solid var(--ink)' : undefined }}>
+          {!showMeetingForm && (
+            <button className="fd-button" style={{ marginBottom: 16 }} onClick={() => setShowMeetingForm(true)}>+ Nouvelle tenue</button>
+          )}
+          {showMeetingForm && (
+          <form onSubmit={createMeeting} className="fd-card fd-card-accent" style={{ marginBottom: 20 }}>
             <h3 style={{ marginTop: 0 }}>{editingMeetingId ? 'Modifier la tenue' : 'Nouvelle tenue'}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <input className="fd-input" type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
@@ -438,9 +444,10 @@ export default function SecretariatPage() {
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="fd-button" type="submit">{editingMeetingId ? 'Enregistrer les modifications' : 'Créer la tenue'}</button>
-              {editingMeetingId && <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={cancelEditMeeting}>Annuler</button>}
+              <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={cancelEditMeeting}>Annuler</button>
             </div>
           </form>
+          )}
 
           <div className="fd-card" style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <select className="fd-input" style={{ width: 180 }} value={upcomingDegreeFilter} onChange={(e) => setUpcomingDegreeFilter(e.target.value)}>
@@ -462,7 +469,7 @@ export default function SecretariatPage() {
             return filteredUpcoming.length === 0 ? (
               <p style={{ color: 'var(--slate)' }}>Aucune tenue à venir ne correspond à ces filtres.</p>
             ) : filteredUpcoming.map((m) => (
-            <div key={m.id} className="fd-card" style={{ marginBottom: 10 }}>
+            <div key={m.id} className="fd-card fd-card-accent" style={{ marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                 <div>
                   <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>

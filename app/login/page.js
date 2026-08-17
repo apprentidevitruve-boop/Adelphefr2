@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import BrandMark from '../../components/BrandMark';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,6 +40,9 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
+        <Link href="/" style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <BrandMark size={28} />
+        </Link>
         <h1 className="fd-display" style={{ textAlign: 'center', fontSize: 22, marginBottom: 20 }}>
           {mode === 'login' ? 'Connexion' : 'Mot de passe oublié'}
         </h1>

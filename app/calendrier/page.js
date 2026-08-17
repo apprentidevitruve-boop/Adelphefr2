@@ -87,9 +87,12 @@ export default function CalendrierPage() {
             const rec = recognitionStatus(me.profile.lodge?.obedienceId, m.lodge.obedienceId, obediences);
             return (
             <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="fd-card" style={{ cursor: 'pointer' }}>
+            <div className="fd-card fd-card-accent" style={{ cursor: 'pointer' }}>
               <div style={{ fontWeight: 600 }}>{m.lodge.name}</div>
               {m.lodge.rite && <div style={{ fontSize: 12, color: 'var(--slate)' }}>{m.lodge.rite.name}</div>}
+              <div style={{ fontSize: 13, color: 'var(--ink)', marginTop: 4, display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+                <span aria-hidden="true">📍</span> {m.lodge.meetingLocation}
+              </div>
               {rec && (
                 <div style={{
                   display: 'inline-block', fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px', marginTop: 6,

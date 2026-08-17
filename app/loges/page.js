@@ -56,7 +56,7 @@ export default function LodgesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filtered.map((l) => (
               <Link key={l.id} href={`/loges/${l.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div className="fd-card" style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
+                <div className="fd-card fd-card-accent" style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
                   {l.sealImageUrl ? (
                     <img src={l.sealImageUrl} alt="" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                   ) : (

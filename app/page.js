@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BrandMark from '../components/BrandMark';
 
 const FEATURES = [
   { title: 'Calendrier du réseau', body: "Consultez les tenues de toutes les loges affiliées, filtrées par grade, rite et orient." },
@@ -11,7 +12,7 @@ export default function LandingPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 6vw' }}>
-        <span className="fd-display" style={{ fontWeight: 700, fontSize: 18, letterSpacing: '0.04em' }}>ADELPHE</span>
+        <span className="fd-display" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 18, letterSpacing: '0.04em' }}><BrandMark size={18} /> ADELPHE</span>
         <nav style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
           <Link href="/association" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>L'association</Link>
           <Link href="/rejoindre" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Rejoindre le réseau</Link>
@@ -20,6 +21,7 @@ export default function LandingPage() {
       </header>
 
       <section style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '60px 20px' }}>
+        <img src="/emblem.jpg" alt="" width={340} style={{ maxWidth: '90%', height: 'auto', marginBottom: 18, borderRadius: 8 }} />
         <div style={{ fontSize: 11, letterSpacing: '0.18em', color: 'var(--slate)', marginBottom: 14 }}>RÉSEAU DES LOGES</div>
         <h1 className="fd-display" style={{ fontSize: 48, fontWeight: 700, letterSpacing: '0.02em', margin: 0, textTransform: 'uppercase' }}>Adelphe</h1>
         <p className="fd-display" style={{ fontStyle: 'italic', color: 'var(--slate)', fontSize: 19, marginTop: 10, maxWidth: 480 }}>

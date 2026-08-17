@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import BrandMark from './BrandMark';
 
 const BUREAU_ROLES = ['secretary', 'president', 'treasurer'];
 
@@ -21,8 +22,8 @@ export default function AppHeader({ profile }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: '16px 20px', borderBottom: '1px solid var(--line)', marginBottom: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
-        <Link href="/dashboard" style={{ fontWeight: 700, fontFamily: "'Fraunces', serif", fontSize: 16, textDecoration: 'none', color: 'var(--ink)' }}>
-          Adelphe
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontFamily: "'Fraunces', serif", fontSize: 16, textDecoration: 'none', color: 'var(--ink)' }}>
+          <BrandMark size={18} /> Adelphe
         </Link>
         <Link href="/ma-loge" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Ma loge</Link>
         <Link href="/loges" style={{ fontSize: 13.5, color: 'var(--slate)', textDecoration: 'none' }}>Loges</Link>

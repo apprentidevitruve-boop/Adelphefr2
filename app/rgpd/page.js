@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BrandMark from '../../components/BrandMark';
 
 const SECTIONS = [
   {
@@ -43,7 +44,7 @@ export default function RgpdPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 6vw' }}>
-        <Link href="/" className="fd-display" style={{ fontWeight: 700, fontSize: 18, letterSpacing: '0.04em', color: 'var(--ink)', textDecoration: 'none' }}>ADELPHE</Link>
+        <Link href="/" className="fd-display" style={{ fontWeight: 700, fontSize: 18, letterSpacing: '0.04em', color: 'var(--ink)', textDecoration: 'none' }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><BrandMark size={18} /> ADELPHE</span></Link>
         <Link href="/login"><button className="fd-button" style={{ padding: '9px 18px', fontSize: 13 }}>Connexion</button></Link>
       </header>
 

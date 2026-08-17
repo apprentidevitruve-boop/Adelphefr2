@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BrandMark from '../../components/BrandMark';
 
 const EVENTS = [
   { title: 'Ciné-débats', body: 'Une projection suivie d\'un échange ouvert, autour de thèmes qui traversent la tradition maçonnique et le monde contemporain.' },
@@ -18,12 +19,15 @@ export default function AssociationPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 6vw' }}>
-        <Link href="/" className="fd-display" style={{ fontWeight: 700, fontSize: 18, letterSpacing: '0.04em', color: 'var(--ink)', textDecoration: 'none' }}>ADELPHE</Link>
+        <Link href="/" className="fd-display" style={{ fontWeight: 700, fontSize: 18, letterSpacing: '0.04em', color: 'var(--ink)', textDecoration: 'none' }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><BrandMark size={18} /> ADELPHE</span></Link>
         <Link href="/login"><button className="fd-button" style={{ padding: '9px 18px', fontSize: 13 }}>Connexion</button></Link>
       </header>
 
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '20px 20px 80px' }}>
         <div className="fd-mono" style={{ fontSize: 12, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', marginBottom: 10 }}>L'association</div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <img src="/emblem.jpg" alt="" width={220} style={{ maxWidth: '80%', height: 'auto', marginBottom: 14, borderRadius: 6 }} />
+        </div>
         <h1 className="fd-display" style={{ fontSize: 34, textAlign: 'center', margin: '0 0 30px' }}>Adelphe</h1>
 
         <section style={{ marginBottom: 44 }}>
