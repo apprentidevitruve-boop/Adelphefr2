@@ -23,7 +23,7 @@ export default function LandingPage() {
       <section style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '60px 20px' }}>
         <img src="/emblem.jpg" alt="" width={340} style={{ maxWidth: '90%', height: 'auto', marginBottom: 18, borderRadius: 8 }} />
         <div style={{ fontSize: 11, letterSpacing: '0.18em', color: 'var(--slate)', marginBottom: 14 }}>RÉSEAU DES LOGES</div>
-        <h1 className="fd-display" style={{ fontSize: 48, fontWeight: 700, letterSpacing: '0.02em', margin: 0, textTransform: 'uppercase' }}>Adelphe</h1>
+        <h1 className="fd-display" style={{ fontSize: 48, letterSpacing: '0.02em', margin: 0, textTransform: 'uppercase' }}>Adelphe</h1>
         <p className="fd-display" style={{ fontStyle: 'italic', color: 'var(--slate)', fontSize: 19, marginTop: 10, maxWidth: 480 }}>
           Rassembler ce qui est épars
         </p>

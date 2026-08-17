@@ -5,7 +5,10 @@ export async function GET() {
   const auth = await requireRole(null); // n'importe quel utilisateur connecté
   if (auth.error) return auth.error;
 
-  const lodges = await prisma.lodge.findMany({ include: { officers: true, obedience: true, rite: true }, orderBy: { name: 'asc' } });
+  const lodges = await prisma.lodge.findMany({
+    include: { officers: true, obedience: true, rite: true, _count: { select: { profiles: true } } },
+    orderBy: { name: 'asc' },
+  });
   return json({ lodges });
 }
 

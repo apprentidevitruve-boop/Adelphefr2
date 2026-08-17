@@ -3,8 +3,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { DEGREES, recognitionStatus } from '../../lib/constants';
+import { SlidersHorizontal, Clock, Utensils } from 'lucide-react';
+import { DEGREES, MEETING_TYPES, recognitionStatus } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
+import DegreeLadder from '../../components/DegreeLadder';
+import Badge from '../../components/Badge';
+
+const typeLabel = (k) => MEETING_TYPES.find((t) => t.key === k)?.label ?? k;
 
 export default function CalendrierPage() {
   const router = useRouter();
@@ -15,6 +20,7 @@ export default function CalendrierPage() {
   const [cityFilter, setCityFilter] = useState('all');
   const [riteFilter, setRiteFilter] = useState('all');
   const [degreeFilter, setDegreeFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('');
   const [pmrOnly, setPmrOnly] = useState(false);
   const [nonMixteOnly, setNonMixteOnly] = useState(false);
 
@@ -44,6 +50,7 @@ export default function CalendrierPage() {
     .filter((m) => cityFilter === 'all' || m.lodge.city === cityFilter)
     .filter((m) => riteFilter === 'all' || m.lodge.riteId === riteFilter)
     .filter((m) => degreeFilter === 'all' || m.minDegree === degreeFilter)
+    .filter((m) => !dateFilter || new Date(m.date).toISOString().slice(0, 10) === dateFilter)
     .filter((m) => !pmrOnly || m.lodge.pmrAccess)
     .filter((m) => !nonMixteOnly || !m.lodge.mixte);
 
@@ -51,74 +58,92 @@ export default function CalendrierPage() {
     <div>
       <AppHeader profile={me.profile} />
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 40px' }}>
-      <h1 className="fd-display">Calendrier des tenues</h1>
-      <p style={{ color: 'var(--slate)', marginBottom: 20 }}>Les tenues des loges sœurs accessibles à votre grade.</p>
+        <h1 className="fd-display" style={{ fontSize: 27 }}>Calendrier des tenues</h1>
+        <p style={{ color: 'var(--slate)', marginBottom: 20 }}>Les tenues des loges sœurs accessibles à votre grade.</p>
 
-      <div className="fd-card" style={{ marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <select className="fd-input" style={{ width: 180 }} value={lodgeFilter} onChange={(e) => setLodgeFilter(e.target.value)}>
-          <option value="all">Toutes les loges</option>
-          {otherLodges.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-        </select>
-        <select className="fd-input" style={{ width: 150 }} value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
-          <option value="all">Tous les orients</option>
-          {cities.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select className="fd-input" style={{ width: 180 }} value={riteFilter} onChange={(e) => setRiteFilter(e.target.value)}>
-          <option value="all">Tous les rites</option>
-          {rites.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-        </select>
-        <select className="fd-input" style={{ width: 160 }} value={degreeFilter} onChange={(e) => setDegreeFilter(e.target.value)}>
-          <option value="all">Tous les grades</option>
-          {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-        </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, cursor: 'pointer' }}>
-          <input type="checkbox" checked={pmrOnly} onChange={(e) => setPmrOnly(e.target.checked)} />
-          ♿ PMR uniquement
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, cursor: 'pointer' }}>
-          <input type="checkbox" checked={nonMixteOnly} onChange={(e) => setNonMixteOnly(e.target.checked)} />
-          Non mixte uniquement
-        </label>
-      </div>
-
-      {filtered.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucune tenue ne correspond à ces filtres.</p> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map((m) => {
-            const rec = recognitionStatus(me.profile.lodge?.obedienceId, m.lodge.obedienceId, obediences);
-            return (
-            <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="fd-card fd-card-accent" style={{ cursor: 'pointer' }}>
-              <div style={{ fontWeight: 600 }}>{m.lodge.name}</div>
-              {m.lodge.rite && <div style={{ fontSize: 12, color: 'var(--slate)' }}>{m.lodge.rite.name}</div>}
-              <div style={{ fontSize: 13, color: 'var(--ink)', marginTop: 4, display: 'flex', alignItems: 'flex-start', gap: 5 }}>
-                <span aria-hidden="true">📍</span> {m.lodge.meetingLocation}
-              </div>
-              {rec && (
-                <div style={{
-                  display: 'inline-block', fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px', marginTop: 6,
-                  background: rec.level === 'mutual' ? '#EAF3EA' : rec.level === 'partial' ? '#FBF6EC' : '#F3F2EE',
-                  color: rec.level === 'mutual' ? '#2E5B2E' : rec.level === 'partial' ? '#8A6A2A' : 'var(--slate)',
-                }}>
-                  {rec.label}
-                </div>
-              )}
-              {m.lodge.pmrAccess && (
-                <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginTop: 6, marginLeft: 6 }}>
-                  ♿ PMR
-                </div>
-              )}
-              <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', marginTop: 6, marginLeft: 6 }}>
-                {m.lodge.mixte ? 'Mixte' : 'Non mixte'}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 6 }}>{m.planches?.[0]?.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time} · {m.lodge.city}</div>
-              <button className="fd-button" style={{ marginTop: 10 }}>Voir la tenue</button>
-            </div>
-            </Link>
-            );
-          })}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <SlidersHorizontal size={15} color="var(--brass)" />
+          <span style={{ fontWeight: 700, fontSize: 14 }}>Filtres</span>
         </div>
-      )}
+        <div className="fd-card" style={{ marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <select className="fd-input" style={{ width: 180 }} value={lodgeFilter} onChange={(e) => setLodgeFilter(e.target.value)}>
+            <option value="all">Toutes les loges</option>
+            {otherLodges.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+          <select className="fd-input" style={{ width: 150 }} value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
+            <option value="all">Tous les orients</option>
+            {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select className="fd-input" style={{ width: 180 }} value={riteFilter} onChange={(e) => setRiteFilter(e.target.value)}>
+            <option value="all">Tous les rites</option>
+            {rites.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+          <select className="fd-input" style={{ width: 160 }} value={degreeFilter} onChange={(e) => setDegreeFilter(e.target.value)}>
+            <option value="all">Tous les grades</option>
+            {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+          </select>
+          <input className="fd-input" type="date" style={{ width: 170 }} value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, cursor: 'pointer' }}>
+            <input type="checkbox" checked={pmrOnly} onChange={(e) => setPmrOnly(e.target.checked)} />
+            ♿ PMR uniquement
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, cursor: 'pointer' }}>
+            <input type="checkbox" checked={nonMixteOnly} onChange={(e) => setNonMixteOnly(e.target.checked)} />
+            Non mixte uniquement
+          </label>
+        </div>
+
+        {filtered.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucune tenue ne correspond à ces filtres.</p> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filtered.map((m) => {
+              const rec = recognitionStatus(me.profile.lodge?.obedienceId, m.lodge.obedienceId, obediences);
+              const extra = (m.planches?.length || 1) - 1;
+              const date = new Date(m.date);
+              return (
+                <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div className="fd-card fd-card-accent" style={{ cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+                      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                        <div style={{ textAlign: 'center', minWidth: 56 }}>
+                          <div className="fd-mono" style={{ fontSize: 11, color: 'var(--brass)', textTransform: 'uppercase' }}>{date.toLocaleDateString('fr-FR', { month: 'short' })}</div>
+                          <div className="fd-display" style={{ fontSize: 22, fontWeight: 600 }}>{date.getDate()}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {extra > 0 && <Badge>+{extra}</Badge>}
+                            {m.planches?.[0]?.title}
+                          </div>
+                          <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 3 }}>
+                            {m.lodge.name}{m.lodge.rite ? ` · ${m.lodge.rite.name}` : ''}
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                            <Badge><Clock size={10} /> {m.time}</Badge>
+                            <Badge tone="brass">{typeLabel(m.type)}</Badge>
+                            {m.agapesPrice != null && <Badge><Utensils size={10} /> Agapes {m.agapesPrice} €</Badge>}
+                          </div>
+                          <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                            {rec && (
+                              <span style={{
+                                display: 'inline-block', fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px',
+                                background: rec.level === 'mutual' ? '#EAF3EA' : rec.level === 'partial' ? '#FBF6EC' : '#F3F2EE',
+                                color: rec.level === 'mutual' ? '#2E5B2E' : rec.level === 'partial' ? '#8A6A2A' : 'var(--slate)',
+                              }}>
+                                {rec.label}
+                              </span>
+                            )}
+                            {m.lodge.pmrAccess && <Badge>♿ PMR</Badge>}
+                            <Badge>{m.lodge.mixte ? 'Mixte' : 'Non mixte'}</Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <DegreeLadder degree={m.minDegree} />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
