@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { DEGREES, MEETING_TYPES, DOC_LEVELS, degreeLabel, roleLabel, truncateName } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 import DocumentPickerModal from '../../components/DocumentPickerModal';
+import MeetingCardSecretariat from '../../components/MeetingCardSecretariat';
+import { Pencil, Trash2 } from 'lucide-react';
 
 export default function SecretariatPage() {
   const router = useRouter();
@@ -27,6 +29,8 @@ export default function SecretariatPage() {
   const [upcomingDateFilter, setUpcomingDateFilter] = useState('');
   const [upcomingSearch, setUpcomingSearch] = useState('');
   const [showDocPicker, setShowDocPicker] = useState(false);
+  const [participantsSummary, setParticipantsSummary] = useState({});
+  const [showMemberForm, setShowMemberForm] = useState(false);
 
   // L'onglet actif est reflété dans l'URL (?tab=...) pour que le
   // bouton "Retour" d'une page de tenue vous ramène bien sur le bon
@@ -45,8 +49,8 @@ export default function SecretariatPage() {
     if (!meRes.ok) { router.push('/login'); return; }
     const meBody = await meRes.json();
     setMe(meBody);
-    const [meetingsRes, membersRes, requestsRes, documentsRes, visitorsRes, lodgesRes, ritesRes, pastRes, foldersRes] = await Promise.all([
-      fetch('/api/meetings'), fetch('/api/members'), fetch('/api/visit-requests'), fetch('/api/documents'), fetch('/api/visitors'), fetch('/api/lodges'), fetch('/api/rites'), fetch('/api/meetings/past'), fetch('/api/document-folders'),
+    const [meetingsRes, membersRes, requestsRes, documentsRes, visitorsRes, lodgesRes, ritesRes, pastRes, foldersRes, summaryRes] = await Promise.all([
+      fetch('/api/meetings'), fetch('/api/members'), fetch('/api/visit-requests'), fetch('/api/documents'), fetch('/api/visitors'), fetch('/api/lodges'), fetch('/api/rites'), fetch('/api/meetings/past'), fetch('/api/document-folders'), fetch('/api/meetings/participants-summary'),
     ]);
     setMeetings((await meetingsRes.json()).meetings || []);
     setPastMeetings((await pastRes.json()).meetings || []);
@@ -58,6 +62,7 @@ export default function SecretariatPage() {
     const allLodges = (await lodgesRes.json()).lodges || [];
     setLodge(allLodges.find((l) => l.id === meBody.profile.lodgeId) || null);
     setRites((await ritesRes.json()).rites || []);
+    setParticipantsSummary((await summaryRes.json()).summary || {});
   };
   useEffect(() => { load(); }, []);
 
@@ -469,35 +474,24 @@ export default function SecretariatPage() {
             return filteredUpcoming.length === 0 ? (
               <p style={{ color: 'var(--slate)' }}>Aucune tenue à venir ne correspond à ces filtres.</p>
             ) : filteredUpcoming.map((m) => (
-            <div key={m.id} className="fd-card fd-card-accent" style={{ marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
-                  <div style={{ fontSize: 12, color: 'var(--slate)' }}>{new Date(m.date).toLocaleDateString('fr-FR')} · {m.time}</div>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap' }}>{degreeLabel(m.minDegree)}</span>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-                <button className="fd-button" onClick={() => openInviteEditor(m)}>Envoyer les invitations aux visiteurs</button>
-                <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => copyConvocationLink(m)}>Copier le lien de convocation</button>
-                <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => startEditMeeting(m)}>Modifier</button>
-                <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => duplicateMeeting(m)}>Dupliquer</button>
-                <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => deleteMeeting(m)}>Supprimer</button>
-              </div>
-              {inviteEditorId === m.id && (
-                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>Objet</div>
-                  <input className="fd-input" style={{ marginBottom: 8 }} value={inviteSubject} onChange={(e) => setInviteSubject(e.target.value)} />
-                  <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>Message personnel (facultatif, ajouté en tête de l'invitation)</div>
-                  <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 80 }} placeholder="Ex. Nous serions heureux de vous accueillir pour cette tenue exceptionnelle…" value={inviteMessage} onChange={(e) => setInviteMessage(e.target.value)} />
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="fd-button" onClick={() => sendInvite(m.id)}>Envoyer</button>
-                    <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setInviteEditorId(null)}>Annuler</button>
-                  </div>
-                </div>
-              )}
-              <MeetingParticipants meetingId={m.id} />
-            </div>
+              <MeetingCardSecretariat
+                key={m.id}
+                meeting={m}
+                summary={participantsSummary[m.id]}
+                showSendButton
+                onEdit={() => startEditMeeting(m)}
+                onDuplicate={() => duplicateMeeting(m)}
+                onDelete={() => deleteMeeting(m)}
+                onCopyLink={() => copyConvocationLink(m)}
+                onOpenInvite={() => openInviteEditor(m)}
+                inviteOpen={inviteEditorId === m.id}
+                inviteSubject={inviteSubject}
+                setInviteSubject={setInviteSubject}
+                inviteMessage={inviteMessage}
+                setInviteMessage={setInviteMessage}
+                onSendInvite={() => sendInvite(m.id)}
+                onCancelInvite={() => setInviteEditorId(null)}
+              />
             ));
           })()}
         </div>
@@ -524,22 +518,18 @@ export default function SecretariatPage() {
             return filteredPast.length === 0 ? (
               <p style={{ color: 'var(--slate)' }}>Aucune tenue passée ne correspond à ces filtres.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {filteredPast.map((m) => (
-                  <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <div className="fd-card" style={{ cursor: 'pointer' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                        <div>
-                          <div style={{ fontWeight: 600 }}>{m.planches?.[0]?.title}</div>
-                          <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>
-                            {new Date(m.date).toLocaleDateString('fr-FR')}
-                            {m.documentLinks?.length > 0 && ` · 📎 ${m.documentLinks.length} document(s) lié(s)`}
-                          </div>
-                        </div>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--slate)', background: 'var(--stone)', borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap' }}>{degreeLabel(m.minDegree)}</span>
-                      </div>
-                    </div>
-                  </Link>
+                  <MeetingCardSecretariat
+                    key={m.id}
+                    meeting={m}
+                    summary={participantsSummary[m.id]}
+                    showSendButton={false}
+                    onEdit={() => startEditMeeting(m)}
+                    onDuplicate={() => duplicateMeeting(m)}
+                    onDelete={() => deleteMeeting(m)}
+                    onCopyLink={() => copyConvocationLink(m)}
+                  />
                 ))}
               </div>
             );
@@ -600,7 +590,11 @@ export default function SecretariatPage() {
 
       {tab === 'members' && (
         <div>
-          <form onSubmit={createMember} className="fd-card" style={{ marginBottom: 20 }}>
+          {!showMemberForm && (
+            <button className="fd-button" style={{ marginBottom: 16 }} onClick={() => setShowMemberForm(true)}>+ Nouveau membre</button>
+          )}
+          {showMemberForm && (
+          <form onSubmit={(e) => { createMember(e); setShowMemberForm(false); }} className="fd-card fd-card-accent" style={{ marginBottom: 20 }}>
             <h3 style={{ marginTop: 0 }}>Ajouter un membre</h3>
             <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: -4, marginBottom: 12 }}>
               Par discrétion, seules les 3 premières lettres du prénom et du nom sont conservées en base — la personne est ensuite identifiée par son numéro Adelphe.
@@ -628,8 +622,12 @@ export default function SecretariatPage() {
                 <input className="fd-input" type="date" value={memberForm.raisedMasterAt} onChange={(e) => setMemberForm({ ...memberForm, raisedMasterAt: e.target.value })} />
               </label>
             </div>
-            <button className="fd-button" type="submit">Ajouter à la loge</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="fd-button" type="submit">Ajouter à la loge</button>
+              <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowMemberForm(false)}>Annuler</button>
+            </div>
           </form>
+          )}
 
           {members.map((m) => (
             <div key={m.id} className="fd-card" style={{ marginBottom: 8 }}>
@@ -638,9 +636,9 @@ export default function SecretariatPage() {
                   <div style={{ fontWeight: 600 }}>{m.name} <span style={{ fontWeight: 400, color: 'var(--slate)', fontSize: 12.5 }}>· {m.adelpheId}</span></div>
                   <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>{degreeLabel(m.degree)} · {roleLabel(m.role)}{m.masonicIdNumber ? ` · N° maç. ${m.masonicIdNumber}` : ''}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => startEditMember(m)}>Modifier</button>
-                  <button className="fd-button" style={{ background: 'var(--rose)' }} onClick={() => deleteMember(m)}>Supprimer</button>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => startEditMember(m)} title="Modifier" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate)', padding: 4 }}><Pencil size={16} /></button>
+                  <button onClick={() => deleteMember(m)} title="Supprimer" style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 6, cursor: 'pointer', color: 'var(--rose)', padding: 4, display: 'flex' }}><Trash2 size={16} /></button>
                 </div>
               </div>
 
@@ -881,65 +879,6 @@ export default function SecretariatPage() {
         </div>
       )}
       </div>
-    </div>
-  );
-}
-
-function MeetingParticipants({ meetingId }) {
-  const [open, setOpen] = useState(false);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const toggle = async () => {
-    if (!open && !data) {
-      setLoading(true);
-      const res = await fetch(`/api/meetings/${meetingId}/participants`);
-      if (res.ok) setData(await res.json());
-      setLoading(false);
-    }
-    setOpen(!open);
-  };
-
-  return (
-    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line)' }}>
-      <button onClick={toggle} style={{ background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-        {open ? '▾ Masquer les participants' : '▸ Voir les participants'}
-      </button>
-      {open && (
-        loading ? <p style={{ fontSize: 13, color: 'var(--slate)' }}>Chargement…</p> : data && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginTop: 12 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>
-                Présences confirmées ({data.confirmedMembers.length})
-              </div>
-              {data.confirmedMembers.length === 0 ? <div style={{ fontSize: 12.5, color: 'var(--slate-light)' }}>Aucune pour l'instant.</div> : (
-                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>
-                  {data.confirmedMembers.map((m) => <li key={m.id}>{m.name}</li>)}
-                </ul>
-              )}
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>
-                Visiteurs inscrits ({data.visitors.length})
-              </div>
-              {data.visitors.length === 0 ? <div style={{ fontSize: 12.5, color: 'var(--slate-light)' }}>Aucun pour l'instant.</div> : (
-                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>
-                  {data.visitors.map((v, i) => (
-                    <li key={i}>{v.name}{v.guest ? ' (non inscrit)' : v.lodge ? ` (${v.lodge})` : ''}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>Agapes</div>
-              <div style={{ fontSize: 12.5 }}>
-                {data.agapesCount} personne(s) inscrite(s)
-                {data.vegetarianCount > 0 && <> dont {data.vegetarianCount} menu(s) végétarien(s)</>}
-              </div>
-            </div>
-          </div>
-        )
-      )}
     </div>
   );
 }

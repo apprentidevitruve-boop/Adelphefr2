@@ -42,27 +42,25 @@ export default function MesVisitesPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {requests.map((r) => (
-              <div key={r.id} className="fd-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-                  <div>
-                    <Link href={`/tenues/${r.meeting.id}`} style={{ fontWeight: 600, color: 'var(--ink)', textDecoration: 'none' }}>
-                      {r.meeting.lodge.name}
-                    </Link>
-                    <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>{r.meeting.planches?.[0]?.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--slate)' }}>{new Date(r.meeting.date).toLocaleDateString('fr-FR')} · {r.meeting.time}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: STATUS_COLOR[r.status] }}>{STATUS_LABEL[r.status]}</span>
-                    {r.status === 'rejected' && r.rejectionReason && (
-                      <div style={{ fontSize: 11.5, color: 'var(--slate)', marginTop: 2 }}>Motif : {r.rejectionReason}</div>
-                    )}
-                    {r.status === 'pending' && (
-                      <div style={{ marginTop: 6 }}>
-                        <button onClick={() => cancelVisit(r.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 12.5 }}>Annuler</button>
-                      </div>
-                    )}
-                  </div>
+              <div key={r.id} className="fd-card fd-card-accent">
+                <div>
+                  <Link href={`/tenues/${r.meeting.id}`} style={{ fontWeight: 600, color: 'var(--ink)', textDecoration: 'none' }}>
+                    {r.meeting.lodge.name}
+                  </Link>
+                  <div style={{ fontSize: 12.5, color: 'var(--slate)' }}>{r.meeting.planches?.[0]?.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--slate)' }}>{new Date(r.meeting.date).toLocaleDateString('fr-FR')} · {r.meeting.time}</div>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+                  <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 10px', background: 'var(--stone)', color: STATUS_COLOR[r.status] }}>
+                    {STATUS_LABEL[r.status]}
+                  </span>
+                  {r.status === 'pending' && (
+                    <button onClick={() => cancelVisit(r.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 12.5 }}>Annuler</button>
+                  )}
+                </div>
+                {r.status === 'rejected' && r.rejectionReason && (
+                  <div style={{ fontSize: 11.5, color: 'var(--slate)', marginTop: 6 }}>Motif : {r.rejectionReason}</div>
+                )}
               </div>
             ))}
           </div>
