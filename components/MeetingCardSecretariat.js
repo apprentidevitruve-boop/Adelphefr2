@@ -32,13 +32,11 @@ export default function MeetingCardSecretariat({
 
   return (
     <div className="fd-card" style={{ marginBottom: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <DegreeLadder degree={m.minDegree} />
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={onEdit} title="Modifier" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate)', padding: 4 }}><Pencil size={16} /></button>
-          <button onClick={onDuplicate} title="Dupliquer" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate)', padding: 4 }}><Copy size={16} /></button>
-          <button onClick={onDelete} title="Supprimer" style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 6, cursor: 'pointer', color: 'var(--rose)', padding: 4, display: 'flex' }}><Trash2 size={16} /></button>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <DegreeLadder degree={m.minDegree} size="sm" />
+        <button onClick={onEdit} title="Modifier" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate)', padding: 4 }}><Pencil size={16} /></button>
+        <button onClick={onDuplicate} title="Dupliquer" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate)', padding: 4 }}><Copy size={16} /></button>
+        <button onClick={onDelete} title="Supprimer" style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 6, cursor: 'pointer', color: 'var(--rose)', padding: 4, display: 'flex' }}><Trash2 size={16} /></button>
       </div>
 
       <div style={{ fontWeight: 700, fontSize: 15.5, marginBottom: 8 }}>
@@ -54,15 +52,15 @@ export default function MeetingCardSecretariat({
         <Badge>{s.agapesCount} inscrit(s)</Badge>
       </div>
 
-      <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-        <button onClick={onCopyLink} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, padding: 0 }}>
-          <LinkIcon size={14} /> Copier le lien de convocation
-        </button>
+      <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
         {showSendButton && (
           <button onClick={onOpenInvite} style={{ background: 'none', border: '1.5px solid var(--ink)', borderRadius: 6, padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
             Personnaliser et envoyer
           </button>
         )}
+        <button onClick={onCopyLink} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, padding: 0 }}>
+          <LinkIcon size={14} /> Copier le lien de convocation
+        </button>
       </div>
 
       {inviteOpen && (

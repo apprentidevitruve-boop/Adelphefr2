@@ -31,6 +31,10 @@ export default function SecretariatPage() {
   const [showDocPicker, setShowDocPicker] = useState(false);
   const [participantsSummary, setParticipantsSummary] = useState({});
   const [showMemberForm, setShowMemberForm] = useState(false);
+  const [showDocForm, setShowDocForm] = useState(false);
+  const [showFolderForm, setShowFolderForm] = useState(false);
+  const [showVisitorForm, setShowVisitorForm] = useState(false);
+  const [showImportPanel, setShowImportPanel] = useState(false);
 
   // L'onglet actif est reflété dans l'URL (?tab=...) pour que le
   // bouton "Retour" d'une page de tenue vous ramène bien sur le bon
@@ -672,7 +676,13 @@ export default function SecretariatPage() {
       )}
       {tab === 'documents' && (
         <div>
-          <form onSubmit={createDocument} className="fd-card" style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            {!showDocForm && <button className="fd-button" onClick={() => setShowDocForm(true)}>+ Nouveau document</button>}
+            {!showFolderForm && <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowFolderForm(true)}>+ Nouveau dossier</button>}
+          </div>
+
+          {showDocForm && (
+          <form onSubmit={(e) => { createDocument(e); setShowDocForm(false); }} className="fd-card fd-card-accent" style={{ marginBottom: 20 }}>
             <h3 style={{ marginTop: 0 }}>Nouveau document</h3>
             <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Titre" required value={docForm.title} onChange={(e) => setDocForm({ ...docForm, title: e.target.value })} />
             <select className="fd-input" style={{ marginBottom: 8 }} value={docForm.minDegree} onChange={(e) => setDocForm({ ...docForm, minDegree: e.target.value })}>
@@ -688,13 +698,20 @@ export default function SecretariatPage() {
               <input key={docFileInputKey} type="file" onChange={uploadDocFile} />
               {docForm.fileName && <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>📎 {docForm.fileName}</div>}
             </div>
-            <button className="fd-button" type="submit">Ajouter</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="fd-button" type="submit">Ajouter</button>
+              <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowDocForm(false)}>Annuler</button>
+            </div>
           </form>
+          )}
 
-          <form onSubmit={createFolder} className="fd-card" style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
+          {showFolderForm && (
+          <form onSubmit={(e) => { createFolder(e); setShowFolderForm(false); }} className="fd-card fd-card-accent" style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
             <input className="fd-input" style={{ flex: 1 }} placeholder="Nom du nouveau dossier (ex. Rituels, Comptes-rendus 2026…)" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} />
-            <button className="fd-button" type="submit" style={{ background: 'var(--slate)' }}>Créer un dossier</button>
+            <button className="fd-button" type="submit" style={{ background: 'var(--slate)' }}>Créer</button>
+            <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowFolderForm(false)}>Annuler</button>
           </form>
+          )}
 
           {[...folders, { id: '', name: 'Sans dossier' }].map((f) => {
             const docsInFolder = documents.filter((d) => (d.folderId || '') === f.id);
@@ -718,7 +735,7 @@ export default function SecretariatPage() {
                         <option value="">Sans dossier</option>
                         {folders.map((fo) => <option key={fo.id} value={fo.id}>{fo.name}</option>)}
                       </select>
-                      <button onClick={() => deleteDocument(d.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer' }}>Supprimer</button>
+                      <button onClick={() => deleteDocument(d.id)} title="Supprimer" style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 6, cursor: 'pointer', color: 'var(--rose)', padding: 4, display: 'flex' }}><Trash2 size={16} /></button>
                     </div>
                   </div>
                 ))}
@@ -730,18 +747,35 @@ export default function SecretariatPage() {
 
       {tab === 'visitors' && (
         <div>
-          <div className="fd-card" style={{ marginBottom: 16 }}>
-            <h3 style={{ marginTop: 0 }}>Importer un fichier CSV</h3>
-            <p style={{ fontSize: 12.5, color: 'var(--slate)' }}>Colonnes attendues : Nom, Prénom, Email.</p>
-            <input type="file" accept=".csv" onChange={importCsv} />
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            {!showVisitorForm && <button className="fd-button" onClick={() => setShowVisitorForm(true)}>+ Ajouter un visiteur</button>}
+            {!showImportPanel && <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowImportPanel(true)}>Importer une liste (CSV)</button>}
           </div>
-          <form onSubmit={createVisitor} className="fd-card" style={{ marginBottom: 20 }}>
+
+          {showImportPanel && (
+            <div className="fd-card fd-card-accent" style={{ marginBottom: 16 }}>
+              <h3 style={{ marginTop: 0 }}>Importer un fichier CSV</h3>
+              <p style={{ fontSize: 12.5, color: 'var(--slate)' }}>Colonnes attendues : Nom, Prénom, Email.</p>
+              <input type="file" accept=".csv" onChange={(e) => { importCsv(e); setShowImportPanel(false); }} />
+              <div style={{ marginTop: 10 }}>
+                <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowImportPanel(false)}>Annuler</button>
+              </div>
+            </div>
+          )}
+
+          {showVisitorForm && (
+          <form onSubmit={(e) => { createVisitor(e); setShowVisitorForm(false); }} className="fd-card fd-card-accent" style={{ marginBottom: 20 }}>
             <h3 style={{ marginTop: 0 }}>Ajouter un visiteur</h3>
             <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Prénom" required value={visitorForm.firstName} onChange={(e) => setVisitorForm({ ...visitorForm, firstName: e.target.value })} />
             <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Nom" required value={visitorForm.lastName} onChange={(e) => setVisitorForm({ ...visitorForm, lastName: e.target.value })} />
             <input className="fd-input" style={{ marginBottom: 8 }} type="email" placeholder="E-mail" required value={visitorForm.email} onChange={(e) => setVisitorForm({ ...visitorForm, email: e.target.value })} />
-            <button className="fd-button" type="submit">Ajouter</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="fd-button" type="submit">Ajouter</button>
+              <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowVisitorForm(false)}>Annuler</button>
+            </div>
           </form>
+          )}
+
           {visitors.map((v) => (
             <div key={v.id} className="fd-card" style={{ marginBottom: 8 }}>
               {editingVisitorId === v.id && editVisitorForm ? (
@@ -760,8 +794,8 @@ export default function SecretariatPage() {
                   <div style={{ fontWeight: 600 }}>{v.lastName}</div>
                   <div style={{ fontSize: 13, color: 'var(--slate)' }}>{v.email}</div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => startEditVisitor(v)} style={{ background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', fontSize: 13 }}>Modifier</button>
-                    <button onClick={() => deleteVisitor(v.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 13 }}>Supprimer</button>
+                    <button onClick={() => startEditVisitor(v)} title="Modifier" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate)', padding: 4 }}><Pencil size={16} /></button>
+                    <button onClick={() => deleteVisitor(v.id)} title="Supprimer" style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 6, cursor: 'pointer', color: 'var(--rose)', padding: 4, display: 'flex' }}><Trash2 size={16} /></button>
                   </div>
                 </div>
               )}

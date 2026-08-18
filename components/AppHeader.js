@@ -47,7 +47,7 @@ export default function AppHeader({ profile }) {
   return (
     <div style={{ background: '#000000', color: '#fff', marginBottom: 28 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 5vw' }}>
-        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 16, textDecoration: 'none', color: '#fff' }}>
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 16, textDecoration: 'none', color: '#fff' }}>
           <BrandMark size={22} onDark /> Adelphe
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

@@ -10,8 +10,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: 'Inter', sans-serif; color: var(--ink); background: var(--stone); }
-h1, h2, h3, .fd-display { font-family: 'Fraunces', serif; }
-h1.fd-display { font-weight: 500; }
+h1, h2, h3, .fd-display { font-family: 'Cormorant Garamond', serif; }
 .fd-mono { font-family: 'IBM Plex Mono', monospace; }
 a { color: inherit; }
 
