@@ -60,7 +60,7 @@ export default function MaLogePage() {
                   {lodge?.name}
                   {lodge?.lodgeNumber && <span className="fd-mono" style={{ fontSize: 15, color: 'var(--slate-light)', fontWeight: 400, marginLeft: 8 }}>N° {lodge.lodgeNumber}</span>}
                 </h2>
-                <Badge tone="navy">{lodge?.city}</Badge>
+                <Badge tone="outline">{lodge?.city}</Badge>
               </div>
               {lodge?.rite && <div style={{ color: 'var(--brass)', fontSize: 13, fontWeight: 600, marginTop: 4 }}>{lodge.rite.name}</div>}
               <div style={{ color: 'var(--slate)', marginTop: 3, fontSize: 13.5 }}>{lodge?.obedience?.name}</div>
@@ -105,9 +105,9 @@ export default function MaLogePage() {
                               {extra > 0 && <Badge>+{extra}</Badge>}
                               {m.planches?.[0]?.title}
                             </div>
-                            <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                               <Badge><Clock size={10} /> {m.time}</Badge>
-                              <Badge tone="brass">{typeLabel(m.type)}</Badge>
+                              <span style={{ fontSize: 12.5, color: 'var(--slate)' }}>{typeLabel(m.type)}</span>
                               {m.agapesPrice != null && <Badge><Utensils size={10} /> Agapes {m.agapesPrice} €</Badge>}
                             </div>
                           </div>

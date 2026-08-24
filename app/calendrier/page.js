@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { SlidersHorizontal, Clock, Utensils } from 'lucide-react';
+import { SlidersHorizontal, Clock, Utensils, MapPin } from 'lucide-react';
 import { DEGREES, MEETING_TYPES, recognitionStatus } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 import DegreeLadder from '../../components/DegreeLadder';
@@ -102,8 +102,8 @@ export default function CalendrierPage() {
               return (
                 <Link key={m.id} href={`/tenues/${m.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <div className="fd-card fd-card-accent" style={{ cursor: 'pointer' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
-                      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14 }}>
+                      <div style={{ display: 'flex', gap: 16 }}>
                         <div style={{ textAlign: 'center', minWidth: 56 }}>
                           <div className="fd-mono" style={{ fontSize: 11, color: 'var(--brass)', textTransform: 'uppercase' }}>{date.toLocaleDateString('fr-FR', { month: 'short' })}</div>
                           <div className="fd-display" style={{ fontSize: 22, fontWeight: 600 }}>{date.getDate()}</div>
@@ -114,14 +114,19 @@ export default function CalendrierPage() {
                             {m.planches?.[0]?.title}
                           </div>
                           <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 3 }}>
-                            {m.lodge.name}{m.lodge.rite ? ` · ${m.lodge.rite.name}` : ''}
+                            {m.lodge.name}{m.lodge.rite ? ` · ${m.lodge.rite.abbreviation || m.lodge.rite.name}` : ''} · {m.time}
                           </div>
-                          <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-                            <Badge><Clock size={10} /> {m.time}</Badge>
-                            <Badge tone="brass">{typeLabel(m.type)}</Badge>
+                          <div style={{ marginTop: 6 }}>
+                            <span style={{ fontSize: 12.5, color: 'var(--slate)' }}>{typeLabel(m.type)}</span>
+                          </div>
+                          <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <MapPin size={13} /> {m.lodge.meetingLocation}
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 10 }}>
+                            <Badge>{m.lodge.mixte ? 'Mixte' : 'Non mixte'}</Badge>
                             {m.agapesPrice != null && <Badge><Utensils size={10} /> Agapes {m.agapesPrice} €</Badge>}
                           </div>
-                          <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                             {rec && (
                               <span style={{
                                 display: 'inline-block', fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px',
@@ -132,11 +137,13 @@ export default function CalendrierPage() {
                               </span>
                             )}
                             {m.lodge.pmrAccess && <Badge>♿ PMR</Badge>}
-                            <Badge>{m.lodge.mixte ? 'Mixte' : 'Non mixte'}</Badge>
                           </div>
                         </div>
                       </div>
-                      <DegreeLadder degree={m.minDegree} />
+                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                        <Badge tone="outline">{m.lodge.city}</Badge>
+                        <DegreeLadder degree={m.minDegree} />
+                      </div>
                     </div>
                   </div>
                 </Link>

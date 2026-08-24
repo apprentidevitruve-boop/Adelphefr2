@@ -73,7 +73,7 @@ export default function LodgesPage() {
                     ) : (
                       <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--stone)', flexShrink: 0 }} />
                     )}
-                    <Badge tone="navy">{l.city}</Badge>
+                    <Badge tone="outline">{l.city}</Badge>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{l.name}{l.lodgeNumber ? ` n°${l.lodgeNumber}` : ''}</div>
                   <div style={{
