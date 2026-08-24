@@ -1,13 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MapPin } from 'lucide-react';
 import AppHeader from '../../../components/AppHeader';
 import DocumentPickerModal from '../../../components/DocumentPickerModal';
-import DegreeLadder from '../../../components/DegreeLadder';
-import Badge from '../../../components/Badge';
+import ConvocationHeader from '../../../components/ConvocationHeader';
 
 export default function MeetingDetailPage({ params }) {
   const router = useRouter();
@@ -56,9 +53,6 @@ export default function MeetingDetailPage({ params }) {
   const confirmedPresence = mine?.confirmedPresence || false;
   const wantsAgapesConfirmed = mine?.wantsAgapes || false;
   const wantsVegetarianConfirmed = mine?.wantsVegetarian || false;
-  const openingPoints = meeting.openingPoints || [];
-  const planches = meeting.planches || [];
-  const closingPoints = meeting.closingPoints || [];
   const agapesPrice = meeting.agapesPrice != null ? Number(meeting.agapesPrice) : null;
 
   const toggleAttendance = async (field, currentValue) => {
@@ -122,65 +116,27 @@ export default function MeetingDetailPage({ params }) {
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '0 20px 40px' }}>
         <button onClick={() => router.back()} style={{ fontSize: 13, color: 'var(--slate)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>← Retour</button>
 
-        <div className="fd-card fd-card-accent" style={{ marginTop: 16, marginBottom: 20 }}>
-          <Link href={`/loges/${meeting.lodge.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-              {meeting.lodge.sealImageUrl ? (
-                <img src={meeting.lodge.sealImageUrl} alt="" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brass)' }} />
-              ) : (
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--stone)' }} />
-              )}
-              <div>
-                <div className="fd-display" style={{ fontSize: 21 }}>{meeting.lodge.name}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--brass)', fontWeight: 600 }}>{meeting.lodge.rite?.abbreviation || meeting.lodge.rite?.name}</div>
+        <div style={{ marginTop: 16, marginBottom: 20 }}>
+          <ConvocationHeader meeting={meeting} />
+        </div>
+
+        <div className="fd-card" style={{ textAlign: 'center', marginBottom: 20 }}>
+          {!showSuggest ? (
+            <button onClick={() => setShowSuggest(true)} style={{ background: 'none', border: 'none', color: 'var(--ink)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13, padding: 0 }}>
+              Suggérer cette tenue à un ami
+            </button>
+          ) : (
+            <form onSubmit={sendSuggestion} style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Suggérer cette tenue</div>
+              <input className="fd-input" style={{ marginBottom: 8 }} type="email" required placeholder="E-mail de votre ami(e)" value={suggestEmail} onChange={(e) => setSuggestEmail(e.target.value)} />
+              <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 60 }} placeholder="Message (facultatif)" value={suggestMessage} onChange={(e) => setSuggestMessage(e.target.value)} />
+              {suggestSent && <p style={{ fontSize: 13, color: suggestSent.startsWith('Erreur') || suggestSent.includes('invalide') ? 'var(--rose)' : 'var(--ink)' }}>{suggestSent}</p>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="fd-button" type="submit">Envoyer</button>
+                <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowSuggest(false)}>Annuler</button>
               </div>
-            </div>
-          </Link>
-
-          <p style={{ fontSize: 15, fontWeight: 600, margin: '0 0 4px' }}>{new Date(meeting.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à {meeting.time}</p>
-          <p style={{ fontSize: 13, color: 'var(--slate)', display: 'flex', alignItems: 'center', gap: 6, margin: '0 0 12px' }}>
-            <MapPin size={14} /> {meeting.lodge.meetingLocation}
-          </p>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 20 }}>
-            <DegreeLadder degree={meeting.minDegree} size="sm" />
-            {meeting.lodge.pmrAccess && <Badge>♿ PMR</Badge>}
-            <Badge>{meeting.lodge.mixte ? 'Mixte' : 'Non mixte'}</Badge>
-          </div>
-
-          <div style={{ textAlign: 'center', marginBottom: 14 }}>
-            <h2 className="fd-display" style={{ fontSize: 22, margin: 0 }}>Ordre du jour</h2>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            {openingPoints.map((p) => <div key={p.id} style={{ margin: '6px 0', color: 'var(--slate)', fontSize: 14 }}>{p.title}</div>)}
-            {planches.map((p) => <div key={p.id} style={{ margin: '10px 0', fontWeight: 700, fontSize: 16 }}>{p.title}</div>)}
-            {closingPoints.map((p) => <div key={p.id} style={{ margin: '6px 0', color: 'var(--slate)', fontSize: 14 }}>{p.title}</div>)}
-          </div>
-
-          {agapesPrice != null && (
-            <p style={{ fontSize: 13.5, textAlign: 'center', borderTop: '1px solid var(--line)', paddingTop: 14, marginTop: 20 }}>
-              Agapes fraternelles — {agapesPrice} €{meeting.vegetarianOption ? ' (menu végétarien disponible)' : ''}
-            </p>
+            </form>
           )}
-
-          <div style={{ textAlign: 'center', marginTop: agapesPrice != null ? 8 : 20, paddingTop: agapesPrice != null ? 0 : 20, borderTop: agapesPrice != null ? 'none' : '1px solid var(--line)' }}>
-            {!showSuggest ? (
-              <button onClick={() => setShowSuggest(true)} style={{ background: 'none', border: 'none', color: 'var(--ink)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13, padding: 0 }}>
-                Suggérer cette tenue à un ami
-              </button>
-            ) : (
-              <form onSubmit={sendSuggestion} style={{ textAlign: 'left', marginTop: 8 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Suggérer cette tenue</div>
-                <input className="fd-input" style={{ marginBottom: 8 }} type="email" required placeholder="E-mail de votre ami(e)" value={suggestEmail} onChange={(e) => setSuggestEmail(e.target.value)} />
-                <textarea className="fd-input" style={{ marginBottom: 8, minHeight: 60 }} placeholder="Message (facultatif)" value={suggestMessage} onChange={(e) => setSuggestMessage(e.target.value)} />
-                {suggestSent && <p style={{ fontSize: 13, color: suggestSent.startsWith('Erreur') || suggestSent.includes('invalide') ? 'var(--rose)' : 'var(--ink)' }}>{suggestSent}</p>}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="fd-button" type="submit">Envoyer</button>
-                  <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowSuggest(false)}>Annuler</button>
-                </div>
-              </form>
-            )}
-          </div>
         </div>
 
         {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}

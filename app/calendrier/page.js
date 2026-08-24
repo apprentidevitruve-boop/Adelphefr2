@@ -115,16 +115,11 @@ export default function CalendrierPage() {
                           </div>
                           <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 3 }}>
                             {m.lodge.name}{m.lodge.rite ? ` · ${m.lodge.rite.abbreviation || m.lodge.rite.name}` : ''} · {m.time}
+                            {' · '}<span style={{ color: 'var(--ink)' }}>{typeLabel(m.type)}</span>
                           </div>
-                          <div style={{ marginTop: 6 }}>
-                            <span style={{ fontSize: 12.5, color: 'var(--slate)' }}>{typeLabel(m.type)}</span>
-                          </div>
-                          <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <MapPin size={13} /> {m.lodge.meetingLocation}
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 10 }}>
-                            <Badge>{m.lodge.mixte ? 'Mixte' : 'Non mixte'}</Badge>
-                            {m.agapesPrice != null && <Badge><Utensils size={10} /> Agapes {m.agapesPrice} €</Badge>}
+                          <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={13} /> {m.lodge.meetingLocation}</span>
+                            {m.lodge.pmrAccess && <Badge>♿ PMR</Badge>}
                           </div>
                           <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                             {rec && (
@@ -136,13 +131,14 @@ export default function CalendrierPage() {
                                 {rec.label}
                               </span>
                             )}
-                            {m.lodge.pmrAccess && <Badge>♿ PMR</Badge>}
+                            <Badge>{m.lodge.mixte ? 'Mixte' : 'Non mixte'}</Badge>
+                            {m.agapesPrice != null && <Badge><Utensils size={10} /> Agapes {m.agapesPrice} €</Badge>}
                           </div>
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                         <Badge tone="outline">{m.lodge.city}</Badge>
-                        <DegreeLadder degree={m.minDegree} />
+                        <DegreeLadder degree={m.minDegree} size="sm" />
                       </div>
                     </div>
                   </div>
