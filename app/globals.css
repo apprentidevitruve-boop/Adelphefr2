@@ -46,6 +46,23 @@ a .fd-card:hover, a:hover > .fd-card {
 .fd-button:disabled { opacity: 0.5; cursor: not-allowed; }
 .fd-button:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 
+.fd-button-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.fd-button-ghost:hover:not(:disabled) { border-color: var(--brass); background: var(--stone); }
+.fd-button-ghost:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
 .fd-input {
   width: 100%;
   padding: 10px 12px;

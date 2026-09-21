@@ -25,6 +25,7 @@ export async function POST(request) {
   const meeting = await prisma.meeting.findUnique({ where: { id: meetingId } });
   if (!meeting) return jsonError('Tenue introuvable.', 404);
   if (meeting.lodgeId === profile.lodgeId) return jsonError('Cette tenue a lieu dans votre propre loge.', 400);
+  if (meeting.type === 'private') return jsonError("Cette tenue est privée — elle n'est pas ouverte aux visites.", 400);
 
   const existing = await prisma.visitRequest.findFirst({ where: { meetingId, profileId: profile.id } });
   if (existing) return jsonError('Vous avez déjà demandé à visiter cette tenue.', 409);

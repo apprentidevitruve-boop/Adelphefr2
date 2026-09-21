@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { DEGREES, MEETING_TYPES, DOC_LEVELS, degreeLabel, roleLabel, truncateName } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 import DocumentPickerModal from '../../components/DocumentPickerModal';
+import Modal from '../../components/Modal';
 import MeetingCardSecretariat from '../../components/MeetingCardSecretariat';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, FileText } from 'lucide-react';
 
 export default function SecretariatPage() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function SecretariatPage() {
   const [showFolderForm, setShowFolderForm] = useState(false);
   const [showVisitorForm, setShowVisitorForm] = useState(false);
   const [showImportPanel, setShowImportPanel] = useState(false);
+  const [memberSearch, setMemberSearch] = useState('');
 
   // L'onglet actif est reflété dans l'URL (?tab=...) pour que le
   // bouton "Retour" d'une page de tenue vous ramène bien sur le bon
@@ -159,7 +161,7 @@ export default function SecretariatPage() {
     e.preventDefault();
     const res = await fetch('/api/members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(memberForm) });
     if (!res.ok) { const b = await res.json().catch(() => ({})); setNotice(b.error || 'Erreur.'); return; }
-    setNotice('Membre ajouté. Seules les 3 premières lettres du prénom et du nom sont conservées.');
+    setNotice('Membre ajouté.e. Seules les 3 premières lettres du prénom et du nom sont conservées.');
     setMemberForm(blankMemberForm);
     load();
   };
@@ -342,9 +344,6 @@ export default function SecretariatPage() {
       <AppHeader profile={me.profile} />
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 40px' }}>
       <h1 className="fd-display">Secrétariat</h1>
-      <a href="/api/export" style={{ display: 'inline-block', marginBottom: 16 }}>
-        <button className="fd-button" style={{ background: 'var(--slate)' }}>Télécharger les données de ma loge (.zip)</button>
-      </a>
       {notice && <div className="fd-card" style={{ marginBottom: 16 }}>{notice}</div>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)' }}>
@@ -364,11 +363,11 @@ export default function SecretariatPage() {
       {tab === 'meetings' && (
         <div>
           {!showMeetingForm && (
-            <button className="fd-button" style={{ marginBottom: 16 }} onClick={() => setShowMeetingForm(true)}>+ Nouvelle tenue</button>
+            <button className="fd-button-ghost" style={{ marginBottom: 16 }} onClick={() => setShowMeetingForm(true)}>+ Nouvelle tenue</button>
           )}
           {showMeetingForm && (
-          <form onSubmit={createMeeting} className="fd-card fd-card-accent" style={{ marginBottom: 20 }}>
-            <h3 style={{ marginTop: 0 }}>{editingMeetingId ? 'Modifier la tenue' : 'Nouvelle tenue'}</h3>
+          <Modal title={editingMeetingId ? 'Modifier la tenue' : 'Nouvelle tenue'} onClose={cancelEditMeeting} maxWidth={680}>
+          <form onSubmit={createMeeting}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <input className="fd-input" type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
               <input className="fd-input" type="time" required value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
@@ -456,6 +455,7 @@ export default function SecretariatPage() {
               <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={cancelEditMeeting}>Annuler</button>
             </div>
           </form>
+          </Modal>
           )}
 
           <div className="fd-card" style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -547,7 +547,7 @@ export default function SecretariatPage() {
             <div key={r.id} className="fd-card" style={{ marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{r.profile ? r.profile.name : r.guestName}{!r.profile && ' (visiteur non inscrit)'}</div>
+                  <div style={{ fontWeight: 600 }}>{r.profile ? r.profile.name : r.guestName}{!r.profile && ' (visiteur.euse non inscrit.e)'}</div>
                   <div style={{ fontSize: 13, color: 'var(--slate)' }}>{r.meeting?.planches?.[0]?.title} · {new Date(r.meeting?.date).toLocaleDateString('fr-FR')}</div>
                   {!r.profile && (r.guestDegree || r.guestLodge || r.guestObedience) && (
                     <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 2 }}>
@@ -595,7 +595,7 @@ export default function SecretariatPage() {
       {tab === 'members' && (
         <div>
           {!showMemberForm && (
-            <button className="fd-button" style={{ marginBottom: 16 }} onClick={() => setShowMemberForm(true)}>+ Nouveau membre</button>
+            <button className="fd-button-ghost" style={{ marginBottom: 16 }} onClick={() => setShowMemberForm(true)}>+ Nouveau membre</button>
           )}
           {showMemberForm && (
           <form onSubmit={(e) => { createMember(e); setShowMemberForm(false); }} className="fd-card fd-card-accent" style={{ marginBottom: 20 }}>
@@ -607,12 +607,18 @@ export default function SecretariatPage() {
               <input className="fd-input" placeholder="Prénom" required value={memberForm.firstName} onChange={(e) => setMemberForm({ ...memberForm, firstName: e.target.value })} />
               <input className="fd-input" placeholder="Nom" required value={memberForm.lastName} onChange={(e) => setMemberForm({ ...memberForm, lastName: e.target.value })} />
             </div>
-            <input className="fd-input" style={{ marginBottom: 8 }} type="email" placeholder="E-mail" required value={memberForm.email} onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })} />
+            <label style={{ fontSize: 11.5, display: 'block', marginBottom: 8 }}>E-mail
+              <input className="fd-input" type="email" required value={memberForm.email} onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })} />
+            </label>
             <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Mot de passe provisoire" required value={memberForm.password} onChange={(e) => setMemberForm({ ...memberForm, password: e.target.value })} />
-            <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Numéro d'identité maçonnique (facultatif)" value={memberForm.masonicIdNumber} onChange={(e) => setMemberForm({ ...memberForm, masonicIdNumber: e.target.value })} />
-            <select className="fd-input" style={{ marginBottom: 12 }} value={memberForm.degree} onChange={(e) => setMemberForm({ ...memberForm, degree: e.target.value })}>
-              {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-            </select>
+            <label style={{ fontSize: 11.5, display: 'block', marginBottom: 8 }}>Numéro d'identité maçonnique (facultatif)
+              <input className="fd-input" value={memberForm.masonicIdNumber} onChange={(e) => setMemberForm({ ...memberForm, masonicIdNumber: e.target.value })} />
+            </label>
+            <label style={{ fontSize: 11.5, display: 'block', marginBottom: 12 }}>Grade
+              <select className="fd-input" value={memberForm.degree} onChange={(e) => setMemberForm({ ...memberForm, degree: e.target.value })}>
+                {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+              </select>
+            </label>
 
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 8 }}>Dates (facultatif)</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
@@ -633,7 +639,21 @@ export default function SecretariatPage() {
           </form>
           )}
 
-          {members.map((m) => (
+          <input
+            className="fd-input"
+            style={{ marginBottom: 16, maxWidth: 320 }}
+            placeholder="Rechercher un membre (nom, identifiant, e-mail…)"
+            value={memberSearch}
+            onChange={(e) => setMemberSearch(e.target.value)}
+          />
+
+          {members
+            .filter((m) => {
+              const q = memberSearch.trim().toLowerCase();
+              if (!q) return true;
+              return [m.name, m.adelpheId, m.email, m.masonicIdNumber].some((v) => v?.toLowerCase().includes(q));
+            })
+            .map((m) => (
             <div key={m.id} className="fd-card" style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                 <div>
@@ -648,11 +668,18 @@ export default function SecretariatPage() {
 
               {editingMemberId === m.id && editMemberForm && (
                 <form onSubmit={saveMemberEdit} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
-                  <input className="fd-input" style={{ marginBottom: 8 }} type="email" required placeholder="E-mail" value={editMemberForm.email} onChange={(e) => setEditMemberForm({ ...editMemberForm, email: e.target.value })} />
-                  <select className="fd-input" style={{ marginBottom: 8 }} value={editMemberForm.degree} onChange={(e) => setEditMemberForm({ ...editMemberForm, degree: e.target.value })}>
-                    {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-                  </select>
-                  <input className="fd-input" style={{ marginBottom: 8 }} placeholder="Numéro d'identité maçonnique" value={editMemberForm.masonicIdNumber} onChange={(e) => setEditMemberForm({ ...editMemberForm, masonicIdNumber: e.target.value })} />
+                  <div style={{ fontSize: 11.5, color: 'var(--slate)', marginBottom: 10 }}>Identifiant Adelphe (généré automatiquement) — <strong>{m.adelpheId}</strong></div>
+                  <label style={{ fontSize: 11.5, display: 'block', marginBottom: 8 }}>E-mail
+                    <input className="fd-input" type="email" required value={editMemberForm.email} onChange={(e) => setEditMemberForm({ ...editMemberForm, email: e.target.value })} />
+                  </label>
+                  <label style={{ fontSize: 11.5, display: 'block', marginBottom: 8 }}>Grade
+                    <select className="fd-input" value={editMemberForm.degree} onChange={(e) => setEditMemberForm({ ...editMemberForm, degree: e.target.value })}>
+                      {DEGREES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+                    </select>
+                  </label>
+                  <label style={{ fontSize: 11.5, display: 'block', marginBottom: 8 }}>Numéro d'identité maçonnique
+                    <input className="fd-input" value={editMemberForm.masonicIdNumber} onChange={(e) => setEditMemberForm({ ...editMemberForm, masonicIdNumber: e.target.value })} />
+                  </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
                     <label style={{ fontSize: 11.5 }}>Initiation
                       <input className="fd-input" type="date" value={editMemberForm.initiatedAt} onChange={(e) => setEditMemberForm({ ...editMemberForm, initiatedAt: e.target.value })} />
@@ -677,8 +704,8 @@ export default function SecretariatPage() {
       {tab === 'documents' && (
         <div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            {!showDocForm && <button className="fd-button" onClick={() => setShowDocForm(true)}>+ Nouveau document</button>}
-            {!showFolderForm && <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowFolderForm(true)}>+ Nouveau dossier</button>}
+            {!showDocForm && <button className="fd-button-ghost" onClick={() => setShowDocForm(true)}>+ Nouveau document</button>}
+            {!showFolderForm && <button className="fd-button-ghost" onClick={() => setShowFolderForm(true)}>+ Nouveau dossier</button>}
           </div>
 
           {showDocForm && (
@@ -724,21 +751,28 @@ export default function SecretariatPage() {
                 </div>
                 {docsInFolder.length === 0 ? (
                   <p style={{ fontSize: 12.5, color: 'var(--slate)' }}>Aucun document dans ce dossier.</p>
-                ) : docsInFolder.map((d) => (
-                  <div key={d.id} className="fd-card" style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{d.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--slate)' }}>{DOC_LEVELS.find((l) => l.key === d.minDegree)?.label}</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <select className="fd-input" style={{ width: 160 }} value={d.folderId || ''} onChange={(e) => moveDocumentToFolder(d.id, e.target.value)}>
-                        <option value="">Sans dossier</option>
-                        {folders.map((fo) => <option key={fo.id} value={fo.id}>{fo.name}</option>)}
-                      </select>
-                      <button onClick={() => deleteDocument(d.id)} title="Supprimer" style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 6, cursor: 'pointer', color: 'var(--rose)', padding: 4, display: 'flex' }}><Trash2 size={16} /></button>
-                    </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+                    {docsInFolder.map((d) => (
+                      <div key={d.id} className="fd-card fd-card-accent">
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+                          <div style={{ width: 34, height: 34, borderRadius: '50%', border: '1.5px solid var(--brass)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <FileText size={15} color="var(--brass)" />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: 14, wordBreak: 'break-word' }}>{d.title}</div>
+                            <div style={{ fontSize: 11.5, color: 'var(--slate)' }}>{DOC_LEVELS.find((l) => l.key === d.minDegree)?.label}</div>
+                          </div>
+                        </div>
+                        <select className="fd-input" style={{ marginBottom: 10, fontSize: 12.5 }} value={d.folderId || ''} onChange={(e) => moveDocumentToFolder(d.id, e.target.value)}>
+                          <option value="">Sans dossier</option>
+                          {folders.map((fo) => <option key={fo.id} value={fo.id}>{fo.name}</option>)}
+                        </select>
+                        <button onClick={() => deleteDocument(d.id)} title="Supprimer" style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 6, cursor: 'pointer', color: 'var(--rose)', padding: '5px 8px', display: 'inline-flex' }}><Trash2 size={15} /></button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             );
           })}
@@ -748,8 +782,8 @@ export default function SecretariatPage() {
       {tab === 'visitors' && (
         <div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            {!showVisitorForm && <button className="fd-button" onClick={() => setShowVisitorForm(true)}>+ Ajouter un visiteur</button>}
-            {!showImportPanel && <button className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowImportPanel(true)}>Importer une liste (CSV)</button>}
+            {!showVisitorForm && <button className="fd-button-ghost" onClick={() => setShowVisitorForm(true)}>+ Ajouter un visiteur</button>}
+            {!showImportPanel && <button className="fd-button-ghost" onClick={() => setShowImportPanel(true)}>Importer une liste (CSV)</button>}
           </div>
 
           {showImportPanel && (
@@ -807,7 +841,7 @@ export default function SecretariatPage() {
       {tab === 'lodge' && lodgeForm && (
         <div>
           <form onSubmit={saveLodgeSettings} className="fd-card" style={{ marginBottom: 20 }}>
-            <h3 style={{ marginTop: 0 }}>Informations de la loge</h3>
+            <h3 className="fd-display" style={{ marginTop: 0, fontSize: 20, fontWeight: 700 }}>Informations de ma loge</h3>
 
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Sceau de la loge</div>
@@ -837,7 +871,7 @@ export default function SecretariatPage() {
           <form onSubmit={saveLodgeSettings} className="fd-card" style={{ marginBottom: 20 }}>
             <h3 style={{ marginTop: 0 }}>Personnalisation de la convocation</h3>
             <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: -6, marginBottom: 16 }}>
-              Ces réglages s'appliquent automatiquement à la page de convocation envoyée à vos invités.
+              Ces réglages s'appliquent automatiquement à la page de convocation envoyée à vos invité.e.s.
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
@@ -910,6 +944,12 @@ export default function SecretariatPage() {
               ))}
             </div>
           )}
+
+          <div style={{ marginTop: 32, paddingTop: 20, borderTop: '1px solid var(--line)', textAlign: 'center' }}>
+            <a href="/api/export" style={{ display: 'inline-block' }}>
+              <button className="fd-button-ghost">Télécharger les données de ma loge (.zip)</button>
+            </a>
+          </div>
         </div>
       )}
       </div>

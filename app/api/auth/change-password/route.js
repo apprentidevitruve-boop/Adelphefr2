@@ -3,7 +3,7 @@ import { getCurrentProfile, hashPassword, verifyPassword, json, jsonError } from
 
 export async function POST(request) {
   const profile = await getCurrentProfile();
-  if (!profile) return jsonError('Non authentifié.', 401);
+  if (!profile) return jsonError('Non authentifié.e.', 401);
 
   const { currentPassword, newPassword } = await request.json();
   if (!currentPassword || !newPassword) return jsonError('Champs requis manquants.', 400);

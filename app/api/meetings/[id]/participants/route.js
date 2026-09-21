@@ -26,6 +26,10 @@ export async function GET(request, { params }) {
     .filter((a) => a.confirmedPresence)
     .map((a) => ({ id: a.profileId, name: nameById[a.profileId] || 'Membre' }));
 
+  const excusedMembers = attendees
+    .filter((a) => a.excused)
+    .map((a) => ({ id: a.profileId, name: nameById[a.profileId] || 'Membre' }));
+
   const agapesAttendees = attendees.filter((a) => a.wantsAgapes);
   const vegetarianCount = agapesAttendees.filter((a) => a.wantsVegetarian).length;
 
@@ -37,6 +41,7 @@ export async function GET(request, { params }) {
 
   return json({
     confirmedMembers,
+    excusedMembers,
     visitors,
     agapesCount: agapesAttendees.length,
     vegetarianCount,

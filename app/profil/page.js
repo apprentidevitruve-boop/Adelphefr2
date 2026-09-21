@@ -106,7 +106,7 @@ export default function ProfilPage() {
           <h3 style={{ marginTop: 0 }}>Mes abonnements à d'autres loges</h3>
           {subscriptions.length === 0 ? (
             <p style={{ fontSize: 13.5, color: 'var(--slate)' }}>
-              Vous n'êtes abonné(e) à aucune autre loge. Rendez-vous sur la fiche d'une loge pour vous abonner à ses invitations.
+              Vous n'êtes abonné.e à aucune autre loge. Rendez-vous sur la fiche d'une loge pour vous abonner à ses invitations.
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

@@ -234,6 +234,7 @@ model MeetingAttendee {
   meetingId         String
   profileId         String
   confirmedPresence Boolean  @default(false)
+  excused           Boolean  @default(false)
   wantsAgapes       Boolean  @default(false)
   wantsVegetarian   Boolean  @default(false)
 

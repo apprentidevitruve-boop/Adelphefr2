@@ -90,9 +90,15 @@ export default function MeetingCardSecretariat({
                 )}
               </div>
               <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>Excusés ({participants.excusedMembers?.length || 0})</div>
+                {!participants.excusedMembers || participants.excusedMembers.length === 0 ? <div style={{ fontSize: 12.5, color: 'var(--slate-light)' }}>Aucun pour l'instant.</div> : (
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>{participants.excusedMembers.map((p) => <li key={p.id}>{p.name}</li>)}</ul>
+                )}
+              </div>
+              <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>Visiteurs ({participants.visitors.length})</div>
                 {participants.visitors.length === 0 ? <div style={{ fontSize: 12.5, color: 'var(--slate-light)' }}>Aucun pour l'instant.</div> : (
-                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>{participants.visitors.map((v, i) => <li key={i}>{v.name}{v.guest ? ' (non inscrit)' : v.lodge ? ` (${v.lodge})` : ''}</li>)}</ul>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>{participants.visitors.map((v, i) => <li key={i}>{v.name}{v.guest ? ' (non inscrit.e)' : v.lodge ? ` (${v.lodge})` : ''}</li>)}</ul>
                 )}
               </div>
               <div>

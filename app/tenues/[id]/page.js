@@ -51,6 +51,7 @@ export default function MeetingDetailPage({ params }) {
   const isOwnLodge = meeting.lodgeId === me.profile.lodgeId;
   const mine = meeting.attendees?.[0];
   const confirmedPresence = mine?.confirmedPresence || false;
+  const excused = mine?.excused || false;
   const wantsAgapesConfirmed = mine?.wantsAgapes || false;
   const wantsVegetarianConfirmed = mine?.wantsVegetarian || false;
   const agapesPrice = meeting.agapesPrice != null ? Number(meeting.agapesPrice) : null;
@@ -189,7 +190,14 @@ export default function MeetingDetailPage({ params }) {
               >
                 {confirmedPresence ? '✓ Présence confirmée' : 'Je confirme ma présence'}
               </button>
-              {agapesPrice != null && (
+              <button
+                className="fd-button"
+                style={{ background: excused ? 'var(--rose)' : 'transparent', color: excused ? '#fff' : 'var(--rose)', border: '1.5px solid var(--rose)' }}
+                onClick={() => toggleAttendance('excused', excused)}
+              >
+                {excused ? '✓ Excuses présentées' : 'Je présente mes excuses'}
+              </button>
+              {agapesPrice != null && !excused && (
                 <button
                   className="fd-button"
                   style={{ background: wantsAgapesConfirmed ? 'var(--ink)' : 'transparent', color: wantsAgapesConfirmed ? '#fff' : 'var(--ink)', border: '1.5px solid var(--ink)' }}

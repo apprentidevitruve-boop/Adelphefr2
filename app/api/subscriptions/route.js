@@ -25,7 +25,7 @@ export async function POST(request) {
   if (lodgeId === profile.lodgeId) return jsonError("Vous êtes déjà membre de cette loge.", 400);
 
   const existing = await prisma.subscription.findUnique({ where: { profileId_lodgeId: { profileId: profile.id, lodgeId } } });
-  if (existing) return jsonError('Vous êtes déjà abonné(e) à cette loge.', 409);
+  if (existing) return jsonError('Vous êtes déjà abonné.e à cette loge.', 409);
 
   const subscription = await prisma.subscription.create({
     data: { profileId: profile.id, lodgeId, notifyByEmail: notifyByEmail !== false },

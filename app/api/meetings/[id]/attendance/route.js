@@ -16,14 +16,24 @@ export async function PATCH(request, { params }) {
     return jsonError('Vous ne pouvez confirmer votre présence que pour une tenue de votre propre loge.', 403);
   }
 
-  const { confirmedPresence, wantsAgapes, wantsVegetarian } = await request.json();
+  const { confirmedPresence, excused, wantsAgapes, wantsVegetarian } = await request.json();
 
   const existing = await prisma.meetingAttendee.findUnique({
     where: { meetingId_profileId: { meetingId: params.id, profileId: profile.id } },
   });
 
   const data = {};
-  if (confirmedPresence !== undefined) data.confirmedPresence = confirmedPresence;
+  // Confirmer sa présence et présenter ses excuses sont mutuellement
+  // exclusifs — l'un efface l'autre (et l'inscription aux agapes n'a
+  // plus de sens si on s'excuse).
+  if (confirmedPresence !== undefined) {
+    data.confirmedPresence = confirmedPresence;
+    if (confirmedPresence) data.excused = false;
+  }
+  if (excused !== undefined) {
+    data.excused = excused;
+    if (excused) { data.confirmedPresence = false; data.wantsAgapes = false; data.wantsVegetarian = false; }
+  }
   if (wantsAgapes !== undefined) data.wantsAgapes = wantsAgapes;
   if (wantsVegetarian !== undefined) data.wantsVegetarian = wantsVegetarian;
 
@@ -34,6 +44,7 @@ export async function PATCH(request, { params }) {
       meetingId: params.id,
       profileId: profile.id,
       confirmedPresence: confirmedPresence ?? false,
+      excused: excused ?? false,
       wantsAgapes: wantsAgapes ?? false,
       wantsVegetarian: wantsVegetarian ?? false,
     },

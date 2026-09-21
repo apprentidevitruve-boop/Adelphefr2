@@ -47,7 +47,7 @@ export async function PATCH(request, { params }) {
       ? `Votre visite à ${reqRow.meeting.lodge.name} est confirmée`
       : `Réponse à votre demande de visite à ${reqRow.meeting.lodge.name}`;
     const html = status === 'approved'
-      ? `<p>Bonjour,</p><p>Votre demande de visite à <strong>${reqRow.meeting.lodge.name}</strong> a été <strong>approuvée</strong>. Vous serez accueilli(e) avec plaisir.</p>`
+      ? `<p>Bonjour,</p><p>Votre demande de visite à <strong>${reqRow.meeting.lodge.name}</strong> a été <strong>approuvée</strong>. Vous serez accueilli.e avec plaisir.</p>`
       : `<p>Bonjour,</p><p>Votre demande de visite à <strong>${reqRow.meeting.lodge.name}</strong> n'a malheureusement pas pu être retenue cette fois-ci.</p>${rejectionReason ? `<p>Motif : ${rejectionReason}</p>` : ''}`;
     await sendEmail({ to: recipientEmail, subject, html });
   }

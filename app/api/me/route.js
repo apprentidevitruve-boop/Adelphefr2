@@ -3,7 +3,7 @@ import { getCurrentProfile, json, jsonError } from '../../../lib/auth';
 
 export async function GET() {
   const profile = await getCurrentProfile();
-  if (!profile) return jsonError('Non authentifié.', 401);
+  if (!profile) return jsonError('Non authentifié.e.', 401);
   const { passwordHash, ...safe } = profile;
   return json({ profile: safe });
 }
@@ -13,7 +13,7 @@ export async function GET() {
 // du bureau ou de l'administration.
 export async function PATCH(request) {
   const profile = await getCurrentProfile();
-  if (!profile) return jsonError('Non authentifié.', 401);
+  if (!profile) return jsonError('Non authentifié.e.', 401);
 
   const { notifyByEmail } = await request.json();
   const updated = await prisma.profile.update({

@@ -25,6 +25,9 @@ export async function GET(request, { params }) {
     },
   });
   if (!meeting) return jsonError('Tenue introuvable.', 404);
+  if (meeting.type === 'private' && meeting.lodgeId !== profile.lodgeId) {
+    return jsonError('Tenue introuvable.', 404);
+  }
   if (degreeRank(meeting.minDegree) > degreeRank(profile.degree)) {
     return jsonError("Cette tenue n'est pas accessible à votre grade.", 403);
   }

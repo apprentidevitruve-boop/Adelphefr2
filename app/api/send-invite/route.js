@@ -11,6 +11,7 @@ export async function POST(request) {
   const meeting = await prisma.meeting.findUnique({ where: { id: meetingId }, include: { lodge: { include: { rite: true } } } });
   if (!meeting) return jsonError('Tenue introuvable.', 404);
   if (meeting.lodgeId !== profile.lodgeId) return jsonError('Vous ne pouvez inviter que pour les tenues de votre loge.', 403);
+  if (meeting.type === 'private') return jsonError("Une tenue privée n'est pas ouverte aux invités — seuls les membres de la loge en sont informés.", 400);
 
   const visitors = await prisma.visitor.findMany({ where: { lodgeId: meeting.lodgeId } });
   const subscriptions = await prisma.subscription.findMany({

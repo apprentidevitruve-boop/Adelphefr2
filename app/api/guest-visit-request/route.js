@@ -11,6 +11,7 @@ export async function GET(request) {
     include: { lodge: { include: { rite: true, obedience: true, officers: true } }, openingPoints: true, planches: true, closingPoints: true },
   });
   if (!meeting) return jsonError('Convocation introuvable ou expirée.', 404);
+  if (meeting.type === 'private') return jsonError('Convocation introuvable ou expirée.', 404);
   return json({ meeting });
 }
 
@@ -20,6 +21,7 @@ export async function POST(request) {
 
   const meeting = await prisma.meeting.findUnique({ where: { convocationToken } });
   if (!meeting) return jsonError('Convocation introuvable ou expirée.', 404);
+  if (meeting.type === 'private') return jsonError('Convocation introuvable ou expirée.', 404);
 
   await prisma.visitRequest.create({
     data: {
