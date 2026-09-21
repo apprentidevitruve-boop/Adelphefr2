@@ -14,6 +14,7 @@ export default function LodgesPage() {
   const [search, setSearch] = useState('');
   const [riteFilter, setRiteFilter] = useState('all');
   const [obedienceFilter, setObedienceFilter] = useState('all');
+  const [cityFilter, setCityFilter] = useState('all');
 
   useEffect(() => {
     (async () => {
@@ -30,6 +31,7 @@ export default function LodgesPage() {
 
   const rites = [...new Map(lodges.map((l) => l.rite).filter(Boolean).map((r) => [r.id, r])).values()];
   const obediences = [...new Map(lodges.map((l) => l.obedience).filter(Boolean).map((o) => [o.id, o])).values()];
+  const cities = [...new Set(lodges.map((l) => l.city).filter(Boolean))].sort();
 
   const nextMeetingFor = (lodgeId) => {
     const upcoming = meetings.filter((m) => m.lodgeId === lodgeId).sort((a, b) => a.date.localeCompare(b.date));
@@ -39,7 +41,8 @@ export default function LodgesPage() {
   const filtered = lodges
     .filter((l) => !search.trim() || l.name.toLowerCase().includes(search.trim().toLowerCase()) || l.city.toLowerCase().includes(search.trim().toLowerCase()))
     .filter((l) => riteFilter === 'all' || l.riteId === riteFilter)
-    .filter((l) => obedienceFilter === 'all' || l.obedienceId === obedienceFilter);
+    .filter((l) => obedienceFilter === 'all' || l.obedienceId === obedienceFilter)
+    .filter((l) => cityFilter === 'all' || l.city === cityFilter);
 
   return (
     <div>
@@ -57,6 +60,10 @@ export default function LodgesPage() {
         <select className="fd-input" style={{ width: 220 }} value={obedienceFilter} onChange={(e) => setObedienceFilter(e.target.value)}>
           <option value="all">Toutes les obédiences</option>
           {obediences.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </select>
+        <select className="fd-input" style={{ width: 160 }} value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
+          <option value="all">Tous les orients</option>
+          {cities.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 

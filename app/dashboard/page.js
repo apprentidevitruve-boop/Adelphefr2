@@ -89,7 +89,7 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12, marginBottom: 28 }}>
           <div>
             <div className="fd-mono" style={{ fontSize: 12, color: 'var(--brass)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Bienvenue</div>
-            <h1 className="fd-display" style={{ fontSize: 30, margin: 0 }}>{me.profile.name}</h1>
+            <h1 className="fd-display" style={{ fontSize: 30, margin: 0 }}>{me.profile.name?.trim().split(/\s+/).map((p) => `${p}∴`).join('')}</h1>
             <div style={{ color: 'var(--slate)', fontSize: 14, marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span>{me.profile.lodge?.name} · {me.profile.lodge?.city}</span>
               <DegreeLadder degree={me.profile.degree} size="sm" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DEGREES, MEETING_TYPES, DOC_LEVELS, degreeLabel, roleLabel, truncateName } from '../../lib/constants';
@@ -8,7 +8,7 @@ import AppHeader from '../../components/AppHeader';
 import DocumentPickerModal from '../../components/DocumentPickerModal';
 import Modal from '../../components/Modal';
 import MeetingCardSecretariat from '../../components/MeetingCardSecretariat';
-import { Pencil, Trash2, FileText } from 'lucide-react';
+import { Pencil, Trash2, FileText, Folder } from 'lucide-react';
 
 export default function SecretariatPage() {
   const router = useRouter();
@@ -37,6 +37,7 @@ export default function SecretariatPage() {
   const [showVisitorForm, setShowVisitorForm] = useState(false);
   const [showImportPanel, setShowImportPanel] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
+  const [openFolderPopup, setOpenFolderPopup] = useState(null);
 
   // L'onglet actif est reflété dans l'URL (?tab=...) pour que le
   // bouton "Retour" d'une page de tenue vous ramène bien sur le bon
@@ -209,6 +210,7 @@ export default function SecretariatPage() {
     });
   }, [lodge]);
   const [sealUploading, setSealUploading] = useState(false);
+  const sealFileInputRef = useRef(null);
   const uploadSeal = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -377,8 +379,12 @@ export default function SecretariatPage() {
               <select className="fd-input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                 {MEETING_TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
               </select>
-              <input className="fd-input" type="number" placeholder="Capacité visiteurs" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
-              <input className="fd-input" type="number" placeholder="Prix agapes" value={form.agapesPrice} onChange={(e) => setForm({ ...form, agapesPrice: e.target.value })} />
+              <label style={{ fontSize: 11.5 }}>Nombre max d'invités
+                <input className="fd-input" type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
+              </label>
+              <label style={{ fontSize: 11.5 }}>Prix agapes (€)
+                <input className="fd-input" type="number" placeholder="Facultatif" value={form.agapesPrice} onChange={(e) => setForm({ ...form, agapesPrice: e.target.value })} />
+              </label>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, marginBottom: 12, cursor: 'pointer' }}>
               <input type="checkbox" checked={form.vegetarianOption} onChange={(e) => setForm({ ...form, vegetarianOption: e.target.checked })} />
@@ -598,8 +604,8 @@ export default function SecretariatPage() {
             <button className="fd-button-ghost" style={{ marginBottom: 16 }} onClick={() => setShowMemberForm(true)}>+ Nouveau membre</button>
           )}
           {showMemberForm && (
-          <form onSubmit={(e) => { createMember(e); setShowMemberForm(false); }} className="fd-card fd-card-accent" style={{ marginBottom: 20 }}>
-            <h3 style={{ marginTop: 0 }}>Ajouter un membre</h3>
+          <Modal title="Ajouter un membre" onClose={() => setShowMemberForm(false)} maxWidth={620}>
+          <form onSubmit={(e) => { createMember(e); setShowMemberForm(false); }}>
             <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: -4, marginBottom: 12 }}>
               Par discrétion, seules les 3 premières lettres du prénom et du nom sont conservées en base — la personne est ensuite identifiée par son numéro Adelphe.
             </p>
@@ -637,6 +643,7 @@ export default function SecretariatPage() {
               <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => setShowMemberForm(false)}>Annuler</button>
             </div>
           </form>
+          </Modal>
           )}
 
           <input
@@ -667,7 +674,8 @@ export default function SecretariatPage() {
               </div>
 
               {editingMemberId === m.id && editMemberForm && (
-                <form onSubmit={saveMemberEdit} style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                <Modal title={`Modifier ${m.name}`} onClose={() => { setEditingMemberId(null); setEditMemberForm(null); }} maxWidth={560}>
+                <form onSubmit={saveMemberEdit}>
                   <div style={{ fontSize: 11.5, color: 'var(--slate)', marginBottom: 10 }}>Identifiant Adelphe (généré automatiquement) — <strong>{m.adelpheId}</strong></div>
                   <label style={{ fontSize: 11.5, display: 'block', marginBottom: 8 }}>E-mail
                     <input className="fd-input" type="email" required value={editMemberForm.email} onChange={(e) => setEditMemberForm({ ...editMemberForm, email: e.target.value })} />
@@ -696,6 +704,7 @@ export default function SecretariatPage() {
                     <button type="button" className="fd-button" style={{ background: 'var(--slate)' }} onClick={() => { setEditingMemberId(null); setEditMemberForm(null); }}>Annuler</button>
                   </div>
                 </form>
+                </Modal>
               )}
             </div>
           ))}
@@ -743,35 +752,56 @@ export default function SecretariatPage() {
           {[...folders, { id: '', name: 'Sans dossier' }].map((f) => {
             const docsInFolder = documents.filter((d) => (d.folderId || '') === f.id);
             if (f.id === '' && docsInFolder.length === 0) return null;
-            return (
-              <div key={f.id || 'none'} style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <h4 style={{ margin: 0, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--slate)' }}>{f.name} ({docsInFolder.length})</h4>
-                  {f.id && <button onClick={() => deleteFolder(f.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 12 }}>Supprimer le dossier</button>}
+            const preview = docsInFolder.slice(0, 3);
+            const hasMore = docsInFolder.length > 3;
+            const DocRow = ({ d }) => (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <FileText size={14} color="var(--brass)" style={{ flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, wordBreak: 'break-word' }}>{d.title}</div>
+                    <div style={{ fontSize: 11, color: 'var(--slate)' }}>{DOC_LEVELS.find((l) => l.key === d.minDegree)?.label}</div>
+                  </div>
                 </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                  <select className="fd-input" style={{ width: 130, fontSize: 11.5, padding: '5px 8px' }} value={d.folderId || ''} onChange={(e) => moveDocumentToFolder(d.id, e.target.value)}>
+                    <option value="">Sans dossier</option>
+                    {folders.map((fo) => <option key={fo.id} value={fo.id}>{fo.name}</option>)}
+                  </select>
+                  <button onClick={() => deleteDocument(d.id)} title="Supprimer" style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 6, cursor: 'pointer', color: 'var(--rose)', padding: 5, display: 'flex' }}><Trash2 size={14} /></button>
+                </div>
+              </div>
+            );
+            return (
+              <div key={f.id || 'none'} className="fd-card fd-card-accent" style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', border: '1.5px solid var(--brass)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Folder size={16} color="var(--brass)" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{f.name}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--slate)' }}>{docsInFolder.length} document(s)</div>
+                  </div>
+                  {f.id && <button onClick={() => deleteFolder(f.id)} style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 11.5 }}>Supprimer le dossier</button>}
+                </div>
+
                 {docsInFolder.length === 0 ? (
                   <p style={{ fontSize: 12.5, color: 'var(--slate)' }}>Aucun document dans ce dossier.</p>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
-                    {docsInFolder.map((d) => (
-                      <div key={d.id} className="fd-card fd-card-accent">
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
-                          <div style={{ width: 34, height: 34, borderRadius: '50%', border: '1.5px solid var(--brass)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <FileText size={15} color="var(--brass)" />
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, fontSize: 14, wordBreak: 'break-word' }}>{d.title}</div>
-                            <div style={{ fontSize: 11.5, color: 'var(--slate)' }}>{DOC_LEVELS.find((l) => l.key === d.minDegree)?.label}</div>
-                          </div>
-                        </div>
-                        <select className="fd-input" style={{ marginBottom: 10, fontSize: 12.5 }} value={d.folderId || ''} onChange={(e) => moveDocumentToFolder(d.id, e.target.value)}>
-                          <option value="">Sans dossier</option>
-                          {folders.map((fo) => <option key={fo.id} value={fo.id}>{fo.name}</option>)}
-                        </select>
-                        <button onClick={() => deleteDocument(d.id)} title="Supprimer" style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 6, cursor: 'pointer', color: 'var(--rose)', padding: '5px 8px', display: 'inline-flex' }}><Trash2 size={15} /></button>
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    <div>{preview.map((d) => <DocRow key={d.id} d={d} />)}</div>
+                    {hasMore && (
+                      <button onClick={() => setOpenFolderPopup(f.id || 'none')} style={{ background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, marginTop: 8, padding: 0 }}>
+                        Voir les {docsInFolder.length} documents →
+                      </button>
+                    )}
+                  </>
+                )}
+
+                {openFolderPopup === (f.id || 'none') && (
+                  <Modal title={f.name} onClose={() => setOpenFolderPopup(null)} maxWidth={520}>
+                    <div>{docsInFolder.map((d) => <DocRow key={d.id} d={d} />)}</div>
+                  </Modal>
                 )}
               </div>
             );
@@ -848,7 +878,10 @@ export default function SecretariatPage() {
               {lodgeForm.sealImageUrl && (
                 <img src={lodgeForm.sealImageUrl} alt="Sceau de la loge" style={{ width: 90, height: 90, borderRadius: '50%', objectFit: 'cover', display: 'block', marginBottom: 8 }} />
               )}
-              <input type="file" accept="image/*" onChange={uploadSeal} disabled={sealUploading} />
+              <input ref={sealFileInputRef} type="file" accept="image/*" onChange={uploadSeal} disabled={sealUploading} style={{ display: 'none' }} />
+              <button type="button" className="fd-button-ghost" onClick={() => sealFileInputRef.current?.click()} disabled={sealUploading}>
+                {lodgeForm.sealImageUrl ? 'Changer le sceau' : 'Charger un sceau'}
+              </button>
               {sealUploading && <span style={{ fontSize: 12, color: 'var(--slate)', marginLeft: 8 }}>Envoi…</span>}
             </div>
 

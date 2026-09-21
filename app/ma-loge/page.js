@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, MapPin, Clock, Utensils } from 'lucide-react';
+import { ChevronRight, MapPin, Clock, Utensils, Folder, FileText } from 'lucide-react';
 import AppHeader from '../../components/AppHeader';
 import DegreeLadder from '../../components/DegreeLadder';
 import DocLevelBadge from '../../components/DocLevelBadge';
 import Badge from '../../components/Badge';
+import Modal from '../../components/Modal';
 import { MEETING_TYPES } from '../../lib/constants';
 
 const typeLabel = (k) => MEETING_TYPES.find((t) => t.key === k)?.label ?? k;
@@ -18,6 +19,7 @@ export default function MaLogePage() {
   const [tab, setTab] = useState('meetings');
   const [meetings, setMeetings] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [openFolderPopup, setOpenFolderPopup] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -126,31 +128,50 @@ export default function MaLogePage() {
           documents.length === 0 ? <p style={{ color: 'var(--slate)' }}>Aucun document accessible.</p> : (() => {
             const folderNames = [...new Map(documents.filter((d) => d.folder).map((d) => [d.folder.id, d.folder.name])).entries()];
             const groups = [...folderNames, [null, 'Sans dossier']];
+            const DocRow = ({ d }) => (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <FileText size={14} color="var(--brass)" style={{ flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, wordBreak: 'break-word' }}>{d.title}</div>
+                    {d.description && <div style={{ fontSize: 11.5, color: 'var(--slate)' }}>{d.description}</div>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                  <DocLevelBadge level={d.minDegree} />
+                  {d.url && <a href={d.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>Ouvrir</a>}
+                  {d.fileUrl && <a href={d.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>{d.fileName || 'Pièce jointe'}</a>}
+                </div>
+              </div>
+            );
             return groups.map(([folderId, folderName]) => {
               const docsInGroup = documents.filter((d) => (d.folder?.id || null) === folderId);
               if (docsInGroup.length === 0) return null;
+              const preview = docsInGroup.slice(0, 3);
+              const hasMore = docsInGroup.length > 3;
+              const popupKey = folderId || 'none';
               return (
-                <div key={folderId || 'none'} style={{ marginBottom: 20 }}>
-                  <h4 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--slate)', marginBottom: 8 }}>{folderName}</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {docsInGroup.map((d) => (
-                      <div key={d.id} className="fd-card fd-card-accent">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                              <div style={{ fontWeight: 700, fontSize: 15 }}>{d.title}</div>
-                              <DocLevelBadge level={d.minDegree} />
-                            </div>
-                            {d.description && <div style={{ fontSize: 13.5, color: 'var(--slate)', maxWidth: 480 }}>{d.description}</div>}
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {d.url && <a href={d.url} target="_blank" rel="noreferrer"><button className="fd-button" style={{ background: 'var(--slate)' }}>Ouvrir le lien</button></a>}
-                            {d.fileUrl && <a href={d.fileUrl} target="_blank" rel="noreferrer"><button className="fd-button" style={{ background: 'var(--slate)' }}>{d.fileName || 'Pièce jointe'}</button></a>}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                <div key={popupKey} className="fd-card fd-card-accent" style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', border: '1.5px solid var(--brass)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Folder size={16} color="var(--brass)" />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{folderName}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--slate)' }}>{docsInGroup.length} document(s)</div>
+                    </div>
                   </div>
+                  <div>{preview.map((d) => <DocRow key={d.id} d={d} />)}</div>
+                  {hasMore && (
+                    <button onClick={() => setOpenFolderPopup(popupKey)} style={{ background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, marginTop: 8, padding: 0 }}>
+                      Voir les {docsInGroup.length} documents →
+                    </button>
+                  )}
+                  {openFolderPopup === popupKey && (
+                    <Modal title={folderName} onClose={() => setOpenFolderPopup(null)} maxWidth={520}>
+                      <div>{docsInGroup.map((d) => <DocRow key={d.id} d={d} />)}</div>
+                    </Modal>
+                  )}
                 </div>
               );
             });
