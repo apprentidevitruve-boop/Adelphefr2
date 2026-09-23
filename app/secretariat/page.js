@@ -677,6 +677,16 @@ export default function SecretariatPage() {
                 <Modal title={`Modifier ${m.name}`} onClose={() => { setEditingMemberId(null); setEditMemberForm(null); }} maxWidth={560}>
                 <form onSubmit={saveMemberEdit}>
                   <div style={{ fontSize: 11.5, color: 'var(--slate)', marginBottom: 10 }}>Identifiant Adelphe (généré automatiquement) — <strong>{m.adelpheId}</strong></div>
+                  <div style={{ fontSize: 11.5, color: 'var(--slate)', marginBottom: 4 }}>Nom actuel : <strong>{m.name}</strong></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                    <label style={{ fontSize: 11.5 }}>Corriger le prénom
+                      <input className="fd-input" placeholder="Laisser vide pour ne pas changer" value={editMemberForm.firstName || ''} onChange={(e) => setEditMemberForm({ ...editMemberForm, firstName: e.target.value })} />
+                    </label>
+                    <label style={{ fontSize: 11.5 }}>Corriger le nom
+                      <input className="fd-input" placeholder="Laisser vide pour ne pas changer" value={editMemberForm.lastName || ''} onChange={(e) => setEditMemberForm({ ...editMemberForm, lastName: e.target.value })} />
+                    </label>
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--slate-light)', marginTop: -2, marginBottom: 10 }}>Seules les 3 premières lettres de chaque champ seront conservées, comme à la création.</p>
                   <label style={{ fontSize: 11.5, display: 'block', marginBottom: 8 }}>E-mail
                     <input className="fd-input" type="email" required value={editMemberForm.email} onChange={(e) => setEditMemberForm({ ...editMemberForm, email: e.target.value })} />
                   </label>
@@ -749,6 +759,7 @@ export default function SecretariatPage() {
           </form>
           )}
 
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
           {[...folders, { id: '', name: 'Sans dossier' }].map((f) => {
             const docsInFolder = documents.filter((d) => (d.folderId || '') === f.id);
             if (f.id === '' && docsInFolder.length === 0) return null;
@@ -773,7 +784,7 @@ export default function SecretariatPage() {
               </div>
             );
             return (
-              <div key={f.id || 'none'} className="fd-card fd-card-accent" style={{ marginBottom: 16 }}>
+              <div key={f.id || 'none'} className="fd-card fd-card-accent">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', border: '1.5px solid var(--brass)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Folder size={16} color="var(--brass)" />
@@ -806,6 +817,7 @@ export default function SecretariatPage() {
               </div>
             );
           })}
+          </div>
         </div>
       )}
 

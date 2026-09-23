@@ -1,6 +1,6 @@
 import { prisma } from '../../../lib/prisma';
 import { hashPassword, json, jsonError } from '../../../lib/auth';
-import { DEFAULT_OBEDIENCES } from '../../../lib/constants';
+import { DEFAULT_OBEDIENCES, truncateName } from '../../../lib/constants';
 
 // Route de configuration initiale, pensée pour ne JAMAIS nécessiter de
 // console/CLI : elle ne fonctionne qu'une seule fois (tant qu'aucun
@@ -40,7 +40,7 @@ export async function POST(request) {
   const lodge = await prisma.lodge.create({ data: { name: lodgeName, obedienceId: obedience.id, city, meetingLocation } });
   const passwordHash = await hashPassword(adminPassword);
   await prisma.profile.create({
-    data: { name: adminName, email: adminEmail.trim().toLowerCase(), passwordHash, role: 'admin', degree: 'master', lodgeId: lodge.id },
+    data: { name: truncateName(adminName), email: adminEmail.trim().toLowerCase(), passwordHash, role: 'admin', degree: 'master', lodgeId: lodge.id },
   });
 
   return json({ ok: true });
